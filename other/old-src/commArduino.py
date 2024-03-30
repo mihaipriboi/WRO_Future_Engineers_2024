@@ -18,11 +18,11 @@ time.sleep(1)
 
 while ( True ):
     if ( uart.any() == 0 ):
-        uart.write('-70\n')
-        # red_led.on()
-        # time.sleep(0.5)
-        # red_led.off()
-        # time.sleep(0.5)
+        uart.write('70\n')
+        red_led.on()
+        time.sleep(0.5)
+        red_led.off()
+        time.sleep(0.5)
 # send message:
 #    else:
 #        msg = ''

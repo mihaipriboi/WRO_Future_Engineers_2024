@@ -1,23 +1,42 @@
 #include <math.h>
 #include <Encoder.h>
+#include <ESP32Servo.h>
+
+// -----Servo-----
+const int SERVO_PIN = D2;
+Servo servo;
 
 // -----Motor_Drive-----
-const int IN1 = 15;
-const int IN2 = 14;
-const int EEP = 12;
+const int PWMA = A0;
+const int AIN2 = A1;
+const int AIN1 = A2;
 
 // -----Encoder-----
 const int ENCODER_PIN1 = D4;
 const int ENCODER_PIN2 = D5;
-const double GEAR_RATIO = 1./50;
+const double GEAR_RATIO = 1. / 50;
 const double WHEEL_DIAM = 49.5;
-
 Encoder myEnc(ENCODER_PIN1, ENCODER_PIN2);
+
+void comm_setup() {
+  Serial0.begin(19200);
+}
+
+void motor_driver_setup() {
+  pinMode(PWMA, OUTPUT);
+  pinMode(AIN1, OUTPUT);
+  pinMode(AIN2, OUTPUT);
+}
+
+void servo_setup() {
+  servo.attach(SERVO_PIN, 500, 2400);
+  move_servo(0);
+  delay(50);
+}
 
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
-  Serial0.begin(19200);
 
   pinMode(LED_BUILTIN, OUTPUT);
 
@@ -26,36 +45,26 @@ void setup() {
   digitalWrite(LED_BUILTIN, LOW);
   delay(500);
 
-  pinMode(IN1, OUTPUT);
-  pinMode(IN2, OUTPUT);
-  pinMode(EEP, OUTPUT);
-  digitalWrite(EEP, HIGH);
+  comm_setup();
+  motor_driver_setup();
+  servo_setup();
 }
 
 String receivedMessage;
 
 void execute(String cmd) {
-  int pos = 0;
+  int pos = 0, type = 0;
   String motor = "";
-  while (cmd[pos] != ' ') {
-    motor += cmd[pos];
-    pos++;
-  }
-  pos++;
-  int speed = 0, sign = 1;
-  if (cmd[pos] == '-')
-    sign = -1, pos++;
-  else if (cmd[pos] == '+')
-    sign = 1, pos++;
-  while ('0' <= cmd[pos] && cmd[pos] <= '9') {
-    speed = speed * 10 + cmd[pos] - '0';
-    pos++;
-  }
-  speed *= sign;
-  moveMotor(speed);
+  if (cmd[pos] == 's')
+    type = 1, pos++;
+  double val = (cmd + pos).toDouble();
+  if (type == 0)
+    move_motor((int)val);
+  else
+    move_servo(val);
 }
 
-inline void moveMotor(int speed) {
+inline void move_motor(int speed) {
   int dir = 1;
   if (speed < 0) {
     dir = -1;
@@ -65,17 +74,26 @@ inline void moveMotor(int speed) {
     speed = 100;
   speed = map(speed, 0, 100, 0, 255);
   if (dir == 1) {
-    analogWrite(IN1, speed);
-    digitalWrite(IN2, LOW);
+    digitalWrite(AIN1, HIGH);
+    digitalWrite(AIN2, LOW);
+  } else {
+    digitalWrite(AIN1, LOW);
+    digitalWrite(AIN2, HIGH);
   }
-  else {
-    digitalWrite(IN1, LOW);
-    analogWrite(IN2, speed);
-  }
+  analogWrite(PWMA, speed);
 }
 
 double read_motor_cm(double wheel_diameter, double gear_ratio) {  // getting the distance driven by the motor in cm
   return gear_ratio * wheel_diameter * M_PI * (double)myEnc.read() / 12 / 10;
+}
+
+void move_servo(double angle) {
+  if (angle < -1)
+    angle = -1;
+  else if (angle > 1)
+    angle = 1;
+  angle = map(angle, -1, 1, 0, 180);
+  servo.write(angle);
 }
 
 void loop() {
@@ -83,16 +101,12 @@ void loop() {
   while (Serial0.available() > 0) { // if we have some characters waiting
     char receivedChar = Serial0.read(); // we get the first character
     if (receivedChar == '\n') { // if it's the end of message marker
-      // Serial.println(receivedMessage);  // Print the received message in the Serial monitor
       execute(receivedMessage); // execute the received command from the OpenMV camera
-      Serial.println(read_motor_cm(WHEEL_DIAM, GEAR_RATIO)); // get and print the distanced
+      Serial.println(receivedMessage);
+      // Serial.println(read_motor_cm(WHEEL_DIAM, GEAR_RATIO)); // get and print the distanced
       receivedMessage = "";  // Reset the received message
     } else {
       receivedMessage += receivedChar;  // Append characters to the received message
     }
   }
-  digitalWrite(LED_BUILTIN, HIGH);
-  delay(500);
-  digitalWrite(LED_BUILTIN, LOW);
-  delay(500);
 }
