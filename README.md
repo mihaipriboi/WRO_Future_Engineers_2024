@@ -106,7 +106,7 @@ For steering, we selected the MG90S servo motor, favoring it for its high torque
 - Operating speed: 0.08 s/60 degree (6V)
 - Rotation angle: 120 degree
 
-Where to buy the servo motor: https://www.sigmanortec.ro/servomotor-mg996r-180-13kg
+Where to buy the servo motor: https://cleste.ro/motor-servo-mg90s-180g.html
 
 To connect the servo motor to the steering system, we fashioned a custom 3D-printed adapter. Given the dynamic geometry of the system, the connector couldn't be a single rigid piece because its length needed to be adjustable according to the wheel positions. Thus, we designed a two-part beam: the larger piece attaches to the servo and the smaller piece to the steering mechanism. The smaller piece slides into the larger one, permitting the beam's length to vary. We introduced a slight space between the two components to ensure smooth movement, while also ensuring that a significant portion of the smaller piece remains within the larger one to avoid disconnection or bending.
 
