@@ -38,17 +38,17 @@
 
 ## Photos of our robot <b>TBD<b> <a class="anchor" id="robot-image"></a>
 
-| <img src="./images/robot_images/robot_front.png" width="90%" /> | <img src="./images/robot_images/robot_back.png" width="85%" /> | 
+| <img src="./robot-photos/front.jpeg" width="90%" /> | <img src="./robot-photos/back.jpeg" width="85%" /> | 
 | :--: | :--: | 
 | *Front* | *Back* |
-| <img src="./images/robot_images/robot_left.png" width="90%" /> | <img src="./images/robot_images/robot_right.png" width="85%" /> | 
+| <img src="./robot-photos/left.jpeg" width="90%" /> | <img src="./robot-photos/right.jpeg" width="85%" /> | 
 | *Left* | *Right* |
-| <img src="./images/robot_images/robot_top.png" width="90%" /> | <img src="./images/robot_images/robot_bottom.png" width="85%" /> | 
+| <img src="./robot-photos/top.jpeg" width="90%" /> | <img src="./robot-photos/bottom.jpeg" width="85%" /> | 
 | *Top* | *Bottom* |
 
 <br>
 
-## Our video of the robot on [Youtube](https://youtu.be/) <a class="anchor" id="video"></a>
+## Our video of the robot on [Youtube](https://youtu.be/C5bkap5dbnA) <a class="anchor" id="video"></a>
 
 <br>
 
@@ -157,7 +157,7 @@ Where to buy the gyro sensor: https://www.seeedstudio.com/Grove-6-Axis-Accelerom
 ### OpenMV Cam H7 R2 <a class="anchor" id="openmv-cam-h7-r2"></a>
 ![OpenMV Cam H7 R2](./other/readme-images/openmv-cam-h7-r2.jpg "OpenMV Cam H7 R2")
 
-Last year, one of our main challenges was the small number of functions for color tracking. For example, we couldn't restrain the color tracking to just one area of the frame. This made the robot prone to mistakes since it could confuse other elements such as pants and shoes of the bystanders with walls and obstacles.
+Last year, one of our main challenges was the small number of functions for color tracking. For example, we couldn't restrain the color tracking to just one area of the frame. This made the robot prone to mistakes since it could confuse other elements such as the pants and the shoes of the bystanders with walls and obstacles.
 
 Together with the Arduino Nano ESP32, the camera delivers readings at approximately 60 frames per second. Additionally, the camera's operation doesn't impact the performance of other sensors, allowing us to take full advantage of their capabilities.
 
