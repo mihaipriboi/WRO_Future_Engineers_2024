@@ -53,11 +53,11 @@
 <br>
 
 # Mobility Management <a class="anchor" id="mobility-management"></a>
-![Powertrain](./images/resources/powertrain.png "Powertrain")
+<!-- ![Powertrain](./images/resources/powertrain.png "Powertrain") -->
 
 ## Powertrain <a class="anchor" id="powertrain-mechanical"></a>
 
-![Powertrain - Bottom View](./images/resources/powertrain_bottom_text.png "Powertrain - Bottom View")
+<!-- ![Powertrain - Bottom View](./images/resources/powertrain_bottom_text.png "Powertrain - Bottom View") -->
 
 ### Drivetrain <a class="anchor" id="drivetrain-mechanical"></a>
 
@@ -80,7 +80,7 @@ Where to buy the motor: https://www.pololu.com/product/3039
 
 To connect the motor's axle to a Lego-compatible axle, we created a custom 3D-printed adapter.
 
-![Gearmotor to axle - 3D Model](./images/resources/DriveMotorToLegoAxle.jpg "Gearmotor to axle 3D piece")
+<!-- ![Gearmotor to axle - 3D Model](./images/resources/DriveMotorToLegoAxle.jpg "Gearmotor to axle 3D piece") -->
 
 ### Motor Driver <a class="anchor" id="motor-driver-mechanical"></a>
 ![Motor driver](./other/readme-images/motor-driver.png "Motor driver")
@@ -91,7 +91,7 @@ Where to buy the motor driver: https://www.sparkfun.com/products/14450
 
 ## Steering <a class="anchor" id="steering-mechanical"></a>
 
-![Powertrain - Angled Bottom View](./images/resources/bottom_angle.png "Powertrain - Angled Bottom View")
+<!-- ![Powertrain - Angled Bottom View](./images/resources/bottom_angle.png "Powertrain - Angled Bottom View") -->
 
 After experimenting with various steering mechanisms such as Ackermann steering and bell-crank steering, we assessed their advantages and drawbacks. Ultimately, we chose a straightforward steering system consisting of a parallelogram linkage. This decision was made because the alternative systems were either too large or too complex to implement effectively. Our selected mechanism is simple, light, and compact, providing a satisfactory steering angle. While it does not adhere to the Ackermann steering geometry, our tests showed that for our robot's small size and light weight, this omission was not critically significant.
 
@@ -110,13 +110,13 @@ Where to buy the servo motor: https://cleste.ro/motor-servo-mg90s-180g.html
 
 To connect the servo motor to the steering system, we fashioned a custom 3D-printed adapter. Given the dynamic geometry of the system, the connector couldn't be a single rigid piece because its length needed to be adjustable according to the wheel positions. Thus, we designed a two-part beam: the larger piece attaches to the servo and the smaller piece to the steering mechanism. The smaller piece slides into the larger one, permitting the beam's length to vary. We introduced a slight space between the two components to ensure smooth movement, while also ensuring that a significant portion of the smaller piece remains within the larger one to avoid disconnection or bending.
 
-![Servo Arm - 3D Model](./images/resources/ServoArm.png "Servo Arm")
+<!-- ![Servo Arm - 3D Model](./images/resources/ServoArm.png "Servo Arm") -->
 
 ## Chassis <a class="anchor" id="chassis-mechanical"></a>
 
 Our initial prototypes utilized Lego pieces to assemble all components, which simplified testing and design modifications. Once we finalized the design, we transitioned to a custom 3D-printed chassis for assembling the mechanical parts. This choice proved to be superior, resulting in a lighter and more compact structure that offered greater design flexibility compared to the Lego-based framework. The chassis accommodates the drivetrain and steering mechanism and includes designated mounts for securing the drive motor and servo motor.
 
-![Chassis - 3D Model](./images/resources/Chassis.jpg "Chassis - 3D Model")
+<!-- ![Chassis - 3D Model](./images/resources/Chassis.jpg "Chassis - 3D Model") -->
 
 
 # Power and Sense Management <a class="anchor" id="power-and-sense-management"></a>
@@ -128,7 +128,7 @@ Where to buy the battery: https://hpi-racing.ro/li-po-2s-74v/acumulator-lipo-gen
 
 The battery is mounted using a custom 3D-printed holder, which is secured to the chassis.
 
-![Battery Mount - 3D Model](./images/resources/BatteryMount.jpg "Battery Mount - 3D Model")
+<!-- ![Battery Mount - 3D Model](./images/resources/BatteryMount.jpg "Battery Mount - 3D Model") -->
 
 ### Arduino Nano ESP32 <a class="anchor" id="arduino-nano-esp32"></a>
 ![Arduino Nano ESP32](./other/readme-images/arduino-nano-esp32.jpg " Arduino Nano ESP32")
@@ -141,7 +141,7 @@ Where to buy the Arduino Nano ESP32: https://store.arduino.cc/products/nano-esp3
 
 The Arduino, mounted on a prototype board, is secured to the chassis with a custom 3D-printed holder.
 
-![PCB Mount - 3D Model](./images/resources/PCB_Mount.jpg "PCB Mount - 3D Model")
+<!-- ![PCB Mount - 3D Model](./images/resources/PCB_Mount.jpg "PCB Mount - 3D Model") -->
 
 ### IMU <a class="anchor" id="imu-sensor"></a>
 ![IMU Sensor - BMI088](./other/readme-images/gyro.jpg "IMU Sensor - BMI088")
@@ -165,7 +165,7 @@ Where to buy the OpenMV Cam H7 R2: https://openmv.io/products/openmv-cam-h7-r2
 
 The OpenMV Cam H7 R2 is mounted on the chassis with a custom 3D-printed holder.
 
-![OpenMV Cam Mount - 3D Model](./images/resources/CameraMount.jpg "OpenMV Cam Mount - 3D Model")
+<!-- ![OpenMV Cam Mount - 3D Model](./images/resources/CameraMount.jpg "OpenMV Cam Mount - 3D Model") -->
 
 ### Voltage regulator <a class="anchor" id="voltage-regulator"></a>
 ![Voltage regulator (L7805CV)](./other/readme-images/linear-voltage-regulator.jpg "Voltage regulator (L7805CV)")
@@ -266,14 +266,16 @@ void servo_setup() {
 
 The servo motor is controlled dinamically in the loop by setting a goal angle and taking small steps towards that goal at every iteration. This way we make sure that we can send a lot of fast angle changes to the servo and get the wanted results.
 
-The function _move_servo_ sets the goal angle to the given parameter angle. If the angle is negative the motor will rotate to the right, and if it is positive, the motor will rotate to left. This way, 0 is going to be the position in which the wheels are straight. Also, the values we are giving the motor need to be between -1 and 1, so we use a clamp function to limit the value we are going to give the motor to roatate to and an interval mapping function to map the parameter from the [-1; 1] interval to the [ANGLE_MIN; ANGLE_MAX] interval
+The function _move_servo_ sets the goal angle to the given parameter angle. If the angle is negative the motor will rotate to the right, and if it is positive, the motor will rotate to left. This way, 0 is going to be the position in which the wheels are straight. Also, the values we are giving the motor need to be between -1 and 1, so we use a clamp function to limit the value we are going to give the motor to roatate to and an interval mapping function to map the parameter from the [-1; 1] interval to the [ANGLE_MIN; ANGLE_MAX] interval.
+
+The function _update_servo_ takes a small step towards the goal angle as described above.
 
 ```ino
 void move_servo(double angle) {
   goal_deg = map_double(angle, -1, 1, ANGLE_MIN, ANGLE_MAX);
 }
 
-void loop() {
+void update_servo() {
   int current_angle_servo = servo.read();
   if (abs(current_angle_servo - goal_deg) >= ANGLE_VARIANCE_THRESHOLD) {
     servo.write(goal_deg);
@@ -286,6 +288,10 @@ void loop() {
       servo.write(max(current_angle_servo - STEP, ANGLE_MIN));
     }
   }
+}
+
+void loop() {
+  update_servo();
 }
 ```
 
