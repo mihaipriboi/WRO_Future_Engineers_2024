@@ -1,17 +1,17 @@
 // -----Servo-----
 #define SERVO_PIN D2
-#define ANGLE_MIN 10 // 12
-#define ANGLE_MID 50
-#define ANGLE_MAX 86 // 92
+#define ANGLE_MIN 10 // 10
+#define ANGLE_MID 50 // 50
+#define ANGLE_MAX 90 // 86
 #define ANGLE_VARIANCE_THRESHOLD (ANGLE_MAX * 0.4)
 #define STEP 4
 Servo servo;
 double goal_deg;
 
 // -----Motor_Drive-----
-#define PWMA A0
+#define PWMA A2
 #define AIN2 A1
-#define AIN1 A2
+#define AIN1 A0
 #define DRIVER_PWM_CHANNEL 1
 #define PWM_FREQ 5000 // 5 kHz
 #define PWM_RES 10 // 10-bit resolution
@@ -36,19 +36,19 @@ void servo_setup() {
   for (int deg = servo.read() - 1; deg >= ANGLE_MIN; deg--)
     servo.write(deg);
   delay(500);
-  Serial.println("after ANGLE_MIN");
+  // Serial.println("after ANGLE_MIN");
   for (int deg = servo.read() + 1; deg <= ANGLE_MID; deg++)
     servo.write(deg);
   delay(500);
-  Serial.println("after ANGLE_MID");
+  // Serial.println("after ANGLE_MID");
   for (int deg = servo.read() + 1; deg <= ANGLE_MAX; deg++)
     servo.write(deg);
   delay(500);
-  Serial.println("after ANGLE_MAX");
+  // Serial.println("after ANGLE_MAX");
   for (int deg = servo.read() - 1; deg >= ANGLE_MID; deg--)
     servo.write(deg);
   delay(500);
-  Serial.println("after ANGLE_MID");
+  // Serial.println("after ANGLE_MID");
   goal_deg = ANGLE_MID;
 }
 
@@ -67,6 +67,7 @@ void move_motor(double speed) {  // move the motor with a given speed in the [0,
     digitalWrite(AIN2, LOW);
   }
   else if (dir == -1) {
+    Serial.println("back");
     digitalWrite(AIN1, LOW);
     digitalWrite(AIN2, HIGH);
   }
@@ -77,12 +78,13 @@ void move_motor(double speed) {  // move the motor with a given speed in the [0,
   ledcWrite(DRIVER_PWM_CHANNEL, (int)speed);
 }
 
-void motor_break() {
-  move_motor(-5);
+void motor_break(long long break_time) {
+  move_motor(-3);
+  delay(break_time);
 }
 
-double read_motor_cm(double wheel_diameter, double gear_ratio) {  // getting the distance driven by the motor in cm
-  return gear_ratio * wheel_diameter * M_PI * (double)myEnc.read() / 12 / 10;
+double read_motor_cm() {  // getting the distance driven by the motor in cm
+  return GEAR_RATIO * WHEEL_DIAM * M_PI * (double)myEnc.read() / 12 / 10;
 }
 
 void move_servo(double angle) {  // move the servo to the angle checkpoint by setting the goal degrees to the angle value
