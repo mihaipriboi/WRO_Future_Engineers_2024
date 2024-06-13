@@ -34,7 +34,7 @@
   * [Images](#images-resources)
 
 ### Team: Priboi Mihai, Nicola Victor, Bălan Teodor <a class="anchor" id="team-image"></a>
-  ![Team](./team-photos/team-image.jpeg)
+  ![Team](./team-photos/team-image.png)
 
 ## Photos of our robot <b>TBD<b> <a class="anchor" id="robot-image"></a>
 
@@ -61,13 +61,13 @@
 
 ### Drivetrain <a class="anchor" id="drivetrain-mechanical"></a>
 
-To minimize friction and thereby reduce speed loss, we avoided using 3D-printed components for the moving parts in the drivetrain. Instead, we utilized Lego pieces, which are molded with high precision and therefore have a very low friction coefficient. The 3D-printed parts were reserved for the chassis and for mounting the electronic components onto the Lego structure.
+To minimize friction and thereby reduce speed loss, driving axle was made from lego pieces. We conected the motor to the driving axle using a custom 3D-printed adapter. The driving axle has a rear wheel lego differential, which allows the robot to turn smoothly. As the axle was already lego, we used lego wheels.
 
 ### Motor <a class="anchor" id="motor-mechanical"></a>
 
 ![Drive motor](./other/readme-images/drive-motor.jpg "Drive motor")
 
-Following an evaluation of different motors, we settled on a geared DC motor that comes with a magnetic encoder. This motor was selected for its lightweight and compact design, which stands out among others with comparable output. Additionally, the magnetic encoder offers greater precision than its optical counterpart. We secured the motor to the chassis using screws.
+Following an evaluation of different motors, we settled on a micro DC gear motor on which we attached a magnetic encoder. This motor was selected for its lightweight and compact design, which stands out among others with comparable output. Additionally, the magnetic encoder offers greater precision than its optical counterpart. We secured the motor to the chassis using a custom 3D-printed holder.
 
 **Specifications:**
 - Voltage: 12V
@@ -80,7 +80,11 @@ Where to buy the motor: https://www.pololu.com/product/3039
 
 To connect the motor's axle to a Lego-compatible axle, we created a custom 3D-printed adapter.
 
-<!-- ![Gearmotor to axle - 3D Model](./images/resources/DriveMotorToLegoAxle.jpg "Gearmotor to axle 3D piece") -->
+![Gearmotor to axle - 3D Model](./other/readme-images/motor_to_axle_v2_drawing.png "Gearmotor to axle 3D piece")
+
+To secure the motor to the chassis, we designed a custom 3D-printed holder. The holder is split into two halves, which are then screwed together to ensure the motor remains in place.
+
+![Micro motor holder (half) - 3D Model](./other/readme-images/motor_mount_v3_drawing.png "Micro motor holder (half) 3D piece")
 
 ### Motor Driver <a class="anchor" id="motor-driver-mechanical"></a>
 ![Motor driver](./other/readme-images/motor-driver.png "Motor driver")
@@ -89,11 +93,29 @@ To control the speed of the drive motor, we utilized a SparkFun Dual TB6612FNG m
 
 Where to buy the motor driver: https://www.sparkfun.com/products/14450
 
+<br>
+
+**Potential Improvements:**
+
+The current motor driver, which has the capacity for two motors but is only using one, can be replaced with a custom-made PCB. This modification aims to reduce the robot's overall weight and size, thereby enhancing its efficiency and performance.
+
 ## Steering <a class="anchor" id="steering-mechanical"></a>
 
 <!-- ![Powertrain - Angled Bottom View](./images/resources/bottom_angle.png "Powertrain - Angled Bottom View") -->
 
 After experimenting with various steering mechanisms such as Ackermann steering and bell-crank steering, we assessed their advantages and drawbacks. Ultimately, we chose a straightforward steering system consisting of a parallelogram linkage. This decision was made because the alternative systems were either too large or too complex to implement effectively. Our selected mechanism is simple, light, and compact, providing a satisfactory steering angle. While it does not adhere to the Ackermann steering geometry, our tests showed that for our robot's small size and light weight, this omission was not critically significant.
+
+As an upgrade to last year's design, we replaced the Lego-based steering system with a custom 3D-printed one. This change allowed us to reduce the robot's weight and size, while also enhancing its overall performance. The new steering system is more robust and offers greater flexibility in terms of design and implementation.
+
+The steering system is composed of 2 symmetrical wheel holders, that are conected togheter by a steering arm. The steering arm is conected to the servo motor. The joints between the wheel holders and the steering arm are made using steel rods.
+
+![Steering System](./other/readme-images/steering_system.png "Steering System")
+
+![Steering Axle](./other/readme-images/steering_axle_v8_drawing.png "Steering Axle")
+
+![Steering Hub](./other/readme-images/steering_hub_v5_drawing.png "Steering Hub")
+
+![Servo Mount](./other/readme-images/servo_mount_v8_drawing.png "Servo Mount")
 
 ### Servo Motor <a class="anchor" id="servo-motor"></a>
 ![MG90S Servo](./other/readme-images/mg90s.jpg "MG90S Servo")
@@ -108,16 +130,19 @@ For steering, we selected the MG90S servo motor, favoring it for its high torque
 
 Where to buy the servo motor: https://cleste.ro/motor-servo-mg90s-180g.html
 
-To connect the servo motor to the steering system, we fashioned a custom 3D-printed adapter. Given the dynamic geometry of the system, the connector couldn't be a single rigid piece because its length needed to be adjustable according to the wheel positions. Thus, we designed a two-part beam: the larger piece attaches to the servo and the smaller piece to the steering mechanism. The smaller piece slides into the larger one, permitting the beam's length to vary. We introduced a slight space between the two components to ensure smooth movement, while also ensuring that a significant portion of the smaller piece remains within the larger one to avoid disconnection or bending.
-
-<!-- ![Servo Arm - 3D Model](./images/resources/ServoArm.png "Servo Arm") -->
-
 ## Chassis <a class="anchor" id="chassis-mechanical"></a>
 
-Our initial prototypes utilized Lego pieces to assemble all components, which simplified testing and design modifications. Once we finalized the design, we transitioned to a custom 3D-printed chassis for assembling the mechanical parts. This choice proved to be superior, resulting in a lighter and more compact structure that offered greater design flexibility compared to the Lego-based framework. The chassis accommodates the drivetrain and steering mechanism and includes designated mounts for securing the drive motor and servo motor.
+Our previous attempts at designing a robot for the Future Engineers category were bulky and heavy, mostly lego based. This year, we aimed to create a more compact and lightweight robot. We achieved this by using a almost entirely 3D-printed chassis. Because of this, the fact that we tried to use as few components as possible, the robot is aproximately 50% lighter than last year's robot, while also being more compact.
 
-<!-- ![Chassis - 3D Model](./images/resources/Chassis.jpg "Chassis - 3D Model") -->
+Another improvement we made was the way of connecting 3d pars togheter. Instead of using lego or screws, we used snapping joints and pins.
 
+The chassis holds basically all of the components. Only the gearmotor and the gyroscope are attached to a separate piece that is then attached to the chassis. The back holds the differential; the middle part has a hole for the battery, on top of which the pcb is mounted using a 3d printed holder. The front holds the camera and the servo motor; the servo mount piece is attached to the chassis as well.
+
+![Chassis](./other/readme-images/chasis_v5_drawing.png "Chassis")
+
+The motor support is a separate piece that holds the motor and the gyroscope. It is attached to the chassis using snapping joints.
+
+![Motor Support](./other/readme-images/motor_support_v7_drawing.png "Motor Support")
 
 # Power and Sense Management <a class="anchor" id="power-and-sense-management"></a>
 
@@ -133,15 +158,13 @@ The battery is mounted using a custom 3D-printed holder, which is secured to the
 ### Arduino Nano ESP32 <a class="anchor" id="arduino-nano-esp32"></a>
 ![Arduino Nano ESP32](./other/readme-images/arduino-nano-esp32.jpg " Arduino Nano ESP32")
 
-At WRO2022 Future Engineers, we used a Raspberry Pi 3B+ in conjunction with an Arduino Uno Every through a serial connection. The Raspberry Pi was tasked with processing images from the camera, whereas the Arduino was dedicated to controlling the motors and collecting sensor data. This method, however, was not optimal. The processing speed of the Raspberry Pi fell short of our requirements, the serial link between the two boards was not as quick as necessary, and it also carried the risk of data loss.
-
-Following the international competition in Dortmund, we discovered the Pixycam 2.1, a camera equipped with its own processing capabilities that can directly connect to an Arduino or other microcontrollers. With the Pixycam 2.1, we were able to remove the Raspberry Pi, thereby enhancing our robot's speed. We also upgraded from the Arduino Uno Every to a Teensy 4.1, which boasts much faster processing power.
+At previous competitions, we used many microcontrollers to manage the robot's various components. This year, we opted for the Arduino Nano ESP32, which combines the functionalities of an Arduino Nano and an ESP32. This microcontroller is capable of handling all of the robot's sensors and actuators, providing a more streamlined and efficient solution.
 
 Where to buy the Arduino Nano ESP32: https://store.arduino.cc/products/nano-esp32
 
-The Arduino, mounted on a prototype board, is secured to the chassis with a custom 3D-printed holder.
+The Arduino, mounted on a prototype board, is secured to the chassis with a 3D-printed holder. The pcb is attached to the chassis using screws.
 
-<!-- ![PCB Mount - 3D Model](./images/resources/PCB_Mount.jpg "PCB Mount - 3D Model") -->
+![PCB Mount](./other/readme-images/pcb_plaque_v5_drawing.png "PCB Mount")
 
 ### IMU <a class="anchor" id="imu-sensor"></a>
 ![IMU Sensor - BMI088](./other/readme-images/gyro.jpg "IMU Sensor - BMI088")
@@ -157,15 +180,11 @@ Where to buy the gyro sensor: https://www.seeedstudio.com/Grove-6-Axis-Accelerom
 ### OpenMV Cam H7 R2 <a class="anchor" id="openmv-cam-h7-r2"></a>
 ![OpenMV Cam H7 R2](./other/readme-images/openmv-cam-h7-r2.jpg "OpenMV Cam H7 R2")
 
-Last year, one of our main challenges was the small number of functions for color tracking. For example, we couldn't restrain the color tracking to just one area of the frame. This made the robot prone to mistakes since it could confuse other elements such as the pants and the shoes of the bystanders with walls and obstacles.
+The OpenMV Cam H7 R2 is a high-performance camera capable of color tracking. The best feature of this camera compared to other options (like the Pixy cam) is that is has a built-in microcontroller that can process the images and send the results to the Arduino. This way, the Arduino can focus on the robot's movement and the camera can focus on the image processing.
 
-Together with the Arduino Nano ESP32, the camera delivers readings at approximately 60 frames per second. Additionally, the camera's operation doesn't impact the performance of other sensors, allowing us to take full advantage of their capabilities.
+Together with the Arduino Nano ESP32, the camera delivers readings at approximately 60 frames per second.
 
 Where to buy the OpenMV Cam H7 R2: https://openmv.io/products/openmv-cam-h7-r2
-
-The OpenMV Cam H7 R2 is mounted on the chassis with a custom 3D-printed holder.
-
-<!-- ![OpenMV Cam Mount - 3D Model](./images/resources/CameraMount.jpg "OpenMV Cam Mount - 3D Model") -->
 
 ### Voltage regulator <a class="anchor" id="voltage-regulator"></a>
 ![Voltage regulator (L7805CV)](./other/readme-images/linear-voltage-regulator.jpg "Voltage regulator (L7805CV)")
@@ -173,6 +192,15 @@ The OpenMV Cam H7 R2 is mounted on the chassis with a custom 3D-printed holder.
 To provide the Arduino Nano ESP32 with the required 5V, we needed to decrease the output from the 7.4V battery, which can reach up to 8.4V when fully charged. We employed a linear voltage regulator, the L7805CV, capable of converting input voltages below 35V down to a steady 5V.
 
 Where to buy the 5V voltage regulator: https://ro.mouser.com/ProductDetail/STMicroelectronics/L7805CV?qs=9NrABl3fj%2FqplZAHiYUxWg%3D%3D
+
+### PCB design <a class="anchor" id="pcb"></a>
+
+The PCB was made on a prototype board. The board has a voltage regulator, the Arduino Nano ESP32, the motor driver, and connectors for the motor, the servo motor, the IMU, and the camera. The board is powered by the LiPo battery.
+
+| PCB connections | PCB w/ regulator | PCB complete |
+| :--: | :--: | :--: |
+| <img src="./other/readme-images/pcb_1.jpg" alt="PCB connections" height="400"> | <img src="./other/readme-images/pcb_2.jpg" alt="PCB w/ regulator" height="400"> | <img src="./other/readme-images/pcb_3.jpg" alt="PCB complete" height="400"> |
+
 
 ### Circuit diagram <a class="anchor" id="circuit-diagram"></a>
 ![Circuit diagram](./electrical-diagram/circuit.png "Circuit diagram")
@@ -502,19 +530,6 @@ To ensure the robot's ability to adapt to any course, we developed a randomizer 
 <br>
 
 # Resources <a class="anchor" id="resources"></a>
-
-## 3D Models <a class="anchor" id="3d-models-resources"></a>
-<li> DC Motor - 
-<li> MG90S Servo motor - 
-<li> Sparkfun Motor Driver - https://grabcad.com/library/sparkfun-motor-driver-dual-tb6612fng-1a-1
-<li> Arduino Nano ESP32 - 
-<li> OpenMV Cam H7 R2 - 
-<li> LiPo Battery - 
-<li> Grove BMI088 Gyroscope - https://grabcad.com/library/mpu6050-1
-<li> Linear Voltage Regulator - https://grabcad.com/library/linear-voltage-regulators-78xx-1
-<li> Prototype Board - 
-
-<br>
 
 ## Images <a class="anchor" id="images-resources"></a>
 <li> DC Motor - https://a.pololu-files.com/picture/0J10610.1200.jpg?204e9b873c23906503616db5c4950010
