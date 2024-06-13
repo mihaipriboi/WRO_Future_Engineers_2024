@@ -24,5 +24,4 @@ void loop() {
   if (is_running) {
     loop_function();
   }
-  // Serial.println("loop fr");
 }

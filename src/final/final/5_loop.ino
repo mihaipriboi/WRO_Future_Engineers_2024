@@ -1,8 +1,11 @@
 // -----Pid logic-----
 #define PID 0
 #define STOP 1
-#define AVOID_CUBE 2
-#define CORRECTION_ANGLE 35
+#define FOLLOW_CUBE 2
+#define PASS_CUBE 3
+#define CORRECTION_ANGLE 30
+#define FORWARD_DISTANCE1 40
+#define FORWARD_DISTANCE2 55
 
 double avoid_cube_angle = 0;
 
@@ -10,8 +13,10 @@ int CASE = PID;
 int OUTER_WALL_DIRECTION = 0;
 int GYRO_OFFSET = 5;
 int turn_direction = 0;
-int motor_speed = 80;
-int pass_speed = 40;
+int motor_speed = 60;
+int pass_speed = 60;
+int start_avoid_dis1 = 0;
+int start_avoid_dis2 = 0;
 
 int loop_cnt = 0;
 int current_angle_gyro = 0;
@@ -22,33 +27,19 @@ double kd_gyro = 0.042;
 double pid_error_gyro, pid_last_error_gyro = 0;
 
 bool flag = false;
-char last_cube_color = 0;
-
-void pass_cube() {
-  servo.write(ANGLE_MID);
-  int start_dis = read_motor_cm(WHEEL_DIAM, GEAR_RATIO);
-  // Serial.println(start_dis);
-  while (read_motor_cm(WHEEL_DIAM, GEAR_RATIO) - start_dis < 45)
-    move_motor(pass_speed);
-  
-  read_gyro(false);
-  pid_error_gyro = ((current_angle_gyro + last_cube_color * CORRECTION_ANGLE) - gx) * kp_gyro + (pid_error_gyro - pid_last_error_gyro) * kd_gyro;
-  pid_last_error_gyro = pid_error_gyro;
-  
-  while (abs(pid_error_gyro) >= 0.1) {
-    move_servo(pid_error_gyro);
-    update_servo();
-    move_motor(pass_speed);
-
-    read_gyro(false);
-    pid_error_gyro = ((current_angle_gyro + last_cube_color * CORRECTION_ANGLE) - gx) * kp_gyro + (pid_error_gyro - pid_last_error_gyro) * kd_gyro;
-    pid_last_error_gyro = pid_error_gyro;
-  }
-}
+int last_cube_color = 0;
 
 void execute(String cmd) {
-  if (cmd[0] == 'a') {
-    pass_cube();
+  if (cmd[0] == 'R' || cmd[0] == 'G') {
+    start_avoid_dis1 = read_motor_cm();
+    CASE = PASS_CUBE;
+    
+    if (cmd[0] == 'R') {
+      last_cube_color = 1;
+    }
+    else {
+      last_cube_color = -1;
+    }
     return;
   }
   int pos = 0, sign = 1;
@@ -63,15 +54,12 @@ void execute(String cmd) {
   double val = cmd.substring(pos).toDouble();
   if (cmd[0] == 'r' || cmd[0] == 'g') {
     avoid_cube_angle = val * sign;
-    CASE = AVOID_CUBE;
-    last_cube_color = -1;
-    if (cmd[0] == 'r') {
-      last_cube_color = 1;
-    }
+    CASE = FOLLOW_CUBE;
   }
   else {
     int msg = (int)val;
     if (msg) {
+      CASE = PID;
       last_cube_color = 0;
       flag = 1;
       if (msg == 1) { // blue line
@@ -120,17 +108,37 @@ void loop_function() {
       }
       break;
     }
-    case AVOID_CUBE: {
+    case FOLLOW_CUBE: {
       move_servo(avoid_cube_angle);
       move_motor(motor_speed);
       break;
     }
+    case PASS_CUBE: {
+      if (read_motor_cm() - start_avoid_dis1 <= FORWARD_DISTANCE1) {
+        move_servo(last_cube_color * -0.5);
+        move_motor(pass_speed);
+        start_avoid_dis2 = read_motor_cm();
+      }
+      else if (read_motor_cm() - start_avoid_dis2 <= FORWARD_DISTANCE2) {
+        move_servo(last_cube_color * 1);
+        move_motor(pass_speed);
+      }
+      else if (abs(current_angle_gyro - gx) < 1)  {
+        CASE = PID;
+      }
+      else {
+        pid_error_gyro = (current_angle_gyro  - gx) * kp_gyro + (pid_error_gyro - pid_last_error_gyro) * kd_gyro;
+        pid_last_error_gyro = pid_error_gyro;
+
+        move_servo(pid_error_gyro);
+        move_motor(pass_speed);
+      }
+      break;
+    }
     case STOP: {
-      // delay(500);
-      motor_break();
-      Serial.println("Stop case");
-      delay(100000);
       is_running = false;
+      Serial.println("Stop case");
+      motor_break(100000);
       break;
     }
     default: {
@@ -152,7 +160,9 @@ void loop_function() {
   while (Serial0.available() > 0) { // if we have some characters waiting
     char receivedChar = Serial0.read(); // we get the first character
     if (receivedChar == '\n') { // if it's the end of message marker
-      execute(receivedMessage); // execute the received command from the OpenMV camera
+      if (CASE != PASS_CUBE) {
+        execute(receivedMessage); // execute the received command from the OpenMV camera
+      }
       receivedMessage = ""; // Reset the received message
     }
     else {

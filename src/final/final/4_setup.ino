@@ -12,7 +12,6 @@ void blink_led(int pin, int duration) {
 
 void setup_led(int pin) {
   pinMode(pin, OUTPUT);
-  blink_led(pin, 500);
 }
 
 void setup_periferics() {
@@ -23,17 +22,22 @@ void setup_periferics() {
 
 void comm_setup() {
   Serial0.begin(19200);
+  while(!Serial0);
+  blink_led(LED_BUILTIN, 500);
   receivedMessage = "";
 }
 
 void setup_function() {
   // put your setup code here, to run once:
-  Serial.begin(2000000);
-
   setup_periferics();
-  comm_setup();
-  motor_driver_setup();
+
+  Serial.begin(9600);
+  // while(!Serial);
+
+  motor_driver_setup(); // must be motor driver setup first and then servo setup
   servo_setup();
+
+  comm_setup();
   gyro_setup(true);
 
   // time_elapsed = millis();

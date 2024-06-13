@@ -493,6 +493,86 @@ case PID: {
 
 ## Final Round <a class="anchor" id="final-management"></a>
 
+For the final round, we based our controller algorithm on the quali code, adding a PID controller on the camera to follow the closest cube until it is in its proximity. In order to get the closest cube to the robot we just search for the biggest red or green coloured blob in the image.
+After we're in the cube's proximity, we send a trigger from the camera to the arduino with the cube color so that we can start avoiding it.
+
+```py
+img = sensor.snapshot()
+
+red_blobs = img.find_blobs(red_threshold, roi=cubes_roi, pixels_threshold=min_cube_size, area_threshold=min_cube_size, merge=True)
+green_blobs = img.find_blobs(green_threshold, roi=cubes_roi, pixels_threshold=min_cube_size, area_threshold=min_cube_size, merge=True)
+
+msg = "0\n"
+max_area = 0
+color = 'none'
+saved_cube = None
+for blob in red_blobs:
+    if blob.density() >= prop_thr and blob.area() > max_area:
+        max_area = blob.area()
+        saved_cube = blob
+        color = 'red'
+for blob in green_blobs:
+    if blob.density() >= prop_thr and blob.area() > max_area:
+        max_area = blob.area()
+        saved_cube = blob
+        color = 'green'
+
+if saved_cube != None:
+    if saved_cube.pixels() >= max_cube_size:
+        if uart.any() == 0:
+            if color == 'red':
+                uart.write('R\n')
+            else:
+                uart.write('G\n')
+    else:
+        if color == 'red':
+            err = saved_cube.cx() - img.width() / 2 + offset
+            steering = err * kp + (err - err_old) * kd
+            steering = -clamp(steering, -1, 1)
+            err_old = err
+            msg = 'r' + str(steering) + '\n'
+        else:
+            err = saved_cube.cx() - img.width() / 2 - offset
+            steering = err * kp + (err - err_old) * kd
+            steering = -clamp(steering, -1, 1)
+            err_old = err
+            msg = 'g' + str(steering) + '\n'
+        if uart.any() == 0:
+            uart.write(msg)
+```
+
+The arduino part is quite simple, consisting of the quali switch but with two extra cases: FOLLOW_CUBE and PASS_CUBE. In the FOLLOW_CUBE case we just write to the servo the steering angle calculated by the PID algorithm ran on the camera. The PASS_CUBE case consists of three substates: the first one in which the robot moves forward and steers away from the cube, in the second one the robot steers in the opposite direction to center itself again and the last one in which the robot uses a PID with the gyro to straighten itself out. After that, we go back to the default PID case that is used in the quali code. In addition, while we're in the PASS_CUBE case we do not need any data from the camera, so we just flush all of the received characters.
+
+```ino
+case FOLLOW_CUBE: {
+  move_servo(avoid_cube_angle);
+  move_motor(motor_speed);
+  break;
+}
+case PASS_CUBE: {
+  if (read_motor_cm() - start_avoid_dis1 <= FORWARD_DISTANCE1) {
+    move_servo(last_cube_color * -0.5);
+    move_motor(pass_speed);
+    start_avoid_dis2 = read_motor_cm();
+  }
+  else if (read_motor_cm() - start_avoid_dis2 <= FORWARD_DISTANCE2) {
+    move_servo(last_cube_color * 1);
+    move_motor(pass_speed);
+  }
+  else if (abs(current_angle_gyro - gx) < 1)  {
+    CASE = PID;
+  }
+  else {
+    pid_error_gyro = (current_angle_gyro  - gx) * kp_gyro + (pid_error_gyro - pid_last_error_gyro) * kd_gyro;
+    pid_last_error_gyro = pid_error_gyro;
+
+    move_servo(pid_error_gyro);
+    move_motor(pass_speed);
+  }
+  break;
+}
+```
+
 <br>
 
 # Randomizer <a class="anchor" id="randomizer"></a>

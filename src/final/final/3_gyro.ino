@@ -32,7 +32,6 @@ void gyro_setup(bool debug) {
   status = accel.pinModeInt1(Bmi088Accel::PUSH_PULL,Bmi088Accel::ACTIVE_HIGH);
   status = accel.mapDrdyInt1(true);
 
-
   status = gyro.begin();
 
   status = gyro.setOdr(Bmi088Gyro::ODR_400HZ_BW_47HZ);
@@ -74,7 +73,7 @@ void gyro_setup(bool debug) {
     // drifts_z = gz / DRIFT_TEST_TIME;
 
     if(debug) Serial.print("Drift test done!\nx: ");
-    if(debug) Serial.print(drifts_x, 6);
+    if(debug) Serial.println(drifts_x, 6);
     // if(debug) Serial.print("   y: ");
     // if(debug) Serial.print(drifts_y, 6);
     // if(debug) Serial.print("   z: ");
@@ -102,7 +101,7 @@ void read_gyro(bool debug) {
 
     if(debug) {
       Serial.print("Gyro: gx: ");
-      Serial.print(gx);
+      Serial.println(gx);
       // Serial.print(" gy: ");
       // Serial.print(gy);
       // Serial.print(" gz: ");
