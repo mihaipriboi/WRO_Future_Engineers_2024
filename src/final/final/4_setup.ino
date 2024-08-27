@@ -1,8 +1,5 @@
 String receivedMessage;
 
-uint32_t last_rotate = 0, time_elapsed = 0;
-int turns = 0, freq = 0;
-
 void blink_led(int pin, int duration) {
   digitalWrite(pin, HIGH);
   delay(duration);
@@ -39,10 +36,6 @@ void setup_function() {
 
   comm_setup();
   gyro_setup(true);
-
-  // time_elapsed = millis();
-  // freq = 0;
-  last_rotate = millis() - 1000;
 
   digitalWrite(LED_BUILTIN, HIGH);
   digitalWrite(DEBUG_LED, HIGH);

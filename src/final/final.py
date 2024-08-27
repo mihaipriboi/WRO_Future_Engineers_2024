@@ -2,20 +2,20 @@ import sensor
 import time
 from pyb import UART, LED
 
+# Initialize the sensor
 sensor.reset()
 sensor.set_pixformat(sensor.RGB565)
 sensor.set_framesize(sensor.QQVGA)
-sensor.set_auto_gain(False)  # must be turned off for color tracking
-sensor.set_auto_whitebal(False)  # must be turned off for color tracking
-sensor.set_framerate(40)
-#sensor.set_auto_exposure(False, exposure_us=10000)
-
-#sensor.set_contrast(3) # range -3 to +3
-#sensor.set_brightness(3) # range -3 to +3
-#sensor.set_saturation(3) # range -3 to +3
-
+#sensor.set_framerate(40)
 sensor.set_vflip(True)
 sensor.set_hmirror(True)
+
+# Disable auto gain, white balance, and exposure
+sensor.set_auto_gain(False)  # Must be turned off for color tracking
+sensor.set_auto_whitebal(False)  # Must be turned off for color tracking
+sensor.set_auto_exposure(False, exposure_us=10000)
+
+# Skip some frames to let the camera adjust
 sensor.skip_frames(time=2000)
 
 # Setup UART connection to arduino
@@ -32,142 +32,195 @@ green_led.off()
 blue_led.off()
 time.sleep(0.5)
 
-red_led.on()
-green_led.on()
-blue_led.on()
+#red_led.on()
+#green_led.on()
+#blue_led.on()
 
 # Threshold values
-red_threshold = [(25, 75, 40, 65, 20, 55)]
-green_threshold = [(20, 55, -30, -5, -20, 20)]
-black_threshold = [(0, 45, -10, 15, -25, 10)] # [(0, 30, -10, 10, -10, 10)]
-blue_threshold = [(30, 75, 0, 25, -45, -15)]  # [(10, 80, -5, 25, -40, -10)]
-orange_threshold = [(60, 85, 15, 50, -5, 50)] # [(50, 75, 15, 50, 10, 55)]
+
+#red_threshold = [(35, 62, 40, 70, 5, 60)]
+#red_threshold = [(40, 65, 30, 70, 20, 65)]
+red_threshold = [(40, 55, 45, 70, 20, 65)]
+
+green_threshold = [(45, 70, -50, -15, -20, 20), (25, 50, -30, -10, -30, 10)]
+#blue_threshold = [(10, 55, -15, 45, -45, -5)]
+blue_threshold = [(10, 80, -5, 25, -50, -5)]
+
+#orange_threshold = [(40, 80, 15, 50, 20, 75), (40, 85, -10, 40, 20, 80)]
+#orange_threshold = [(50, 85, 5, 50, -5, 70)]
+orange_threshold = [(50, 75, 5, 45, 15, 75)]
+#orange_threshold = [(40, 85, -10, 40, 20, 80)]
 
 # ROI values
 img = sensor.snapshot()
-cubes_roi = (0, int(img.height() / 3) + 14, img.width(), int(img.height() * 2 / 3) - 14)
-wall_roi = (0, int(img.height() / 3 + 10), img.width(), int(img.height() / 3))
-lines_roi = (0, int(img.height() * 2 / 3 - 14), img.width(), int(img.height() / 3 + 14))
+cubes_roi = (0, int(img.height() / 2 + 7), img.width(), int(img.height() / 2 - 7))
+lines_roi = (0, int(img.height() / 2 + 14), img.width(), int(img.height() / 3 + 14))
 
 # Restrains values
-min_cube_size = 150
-max_cube_size = 900
-line_blob_size = 500
-wall_blob_size = 3200
-prop_thr = 0.7 # density >= 0.8 or solidity >= 1
+min_cube_size = 35
+max_cube_size_red = 350 # 350
+max_cube_size_green = 600 # 450
+
+line_blob_size = 350
+density_thr = 0.6 # density >= 0.8 or solidity >= 1
 
 # PID values
-kp = 0.01
-kd = 0.032 # 0.033
+kp = 0.0033
+kd = 0.033 # 0.033
 err_old = 0
-offset = 0
 
-wall_height_threshold = 26
-constant_height_time = 0.3
+# Logic
+direction = 0
+final = True
 
 def clamp(val, min_intv, max_intv):
     if val < min_intv:
         return min_intv
     if val > max_intv:
         return max_intv
-    return val
+    return round(val, 3)
 
 clock = time.clock()
-
-direction = 0
-last_time_wall = time.time()
 
 while (True):
     clock.tick()
     img = sensor.snapshot()
 
-    red_blobs = img.find_blobs(red_threshold, roi=cubes_roi, pixels_threshold=min_cube_size, area_threshold=min_cube_size, merge=True)
-    green_blobs = img.find_blobs(green_threshold, roi=cubes_roi, pixels_threshold=min_cube_size, area_threshold=min_cube_size, merge=True)
+    orange_blobs = img.find_blobs(orange_threshold, roi=lines_roi, pixels_threshold=line_blob_size, area_threshold=line_blob_size, merge=True)
+    blue_blobs = img.find_blobs(blue_threshold, roi=lines_roi, pixels_threshold=line_blob_size, area_threshold=line_blob_size, merge=True)
 
-    msg = "0\n"
-    max_area = 0
-    color = 'none'
-    saved_cube = None
-    for blob in red_blobs:
-        if blob.density() >= prop_thr and blob.area() > max_area:
-            max_area = blob.area()
-            saved_cube = blob
-            color = 'red'
-#        if blob.density() >= prop_thr:
-#            img.draw_rectangle(blob.rect())
-#            img.draw_cross(blob.cx(), blob.cy())
-    for blob in green_blobs:
-        if blob.density() >= prop_thr and blob.area() > max_area:
-            max_area = blob.area()
-            saved_cube = blob
-            color = 'green'
-#        if blob.density() >= prop_thr:
-#            img.draw_rectangle(blob.rect())
-#            img.draw_cross(blob.cx(), blob.cy())
+    has_line = False
 
-    if saved_cube != None:
-        img.draw_rectangle(saved_cube.rect())
-        img.draw_cross(saved_cube.cx(), saved_cube.cy())
+#    img.draw_rectangle(lines_roi, color=(0, 255, 0))
 
-        if saved_cube.pixels() >= max_cube_size:
-            if uart.any() == 0:
-                if color == 'red':
-                    uart.write('R\n')
-                    print('R\n')
-                else:
-                    uart.write('G\n')
-                    print('G\n')
-        else:
-            if color == 'red':
-                err = saved_cube.cx() - img.width() / 2 + offset
-                steering = err * kp + (err - err_old) * kd
-                steering = -clamp(steering, -1, 1)
-                err_old = err
-                msg = 'r' + str(steering) + '\n'
-            else:
-                err = saved_cube.cx() - img.width() / 2 - offset
-                steering = err * kp + (err - err_old) * kd
-                steering = -clamp(steering, -1, 1)
-                err_old = err
-                msg = 'g' + str(steering) + '\n'
-            if uart.any() == 0:
-                uart.write(msg)
-                print(msg)
-    else:
-        wall_blobs = img.find_blobs(black_threshold, roi=wall_roi, pixels_threshold=wall_blob_size, area_threshold=wall_blob_size, merge=True)
-        orange_blobs = img.find_blobs(orange_threshold, roi=lines_roi, pixels_threshold=line_blob_size, area_threshold=line_blob_size, merge=True)
-        blue_blobs = img.find_blobs(blue_threshold, roi=lines_roi, pixels_threshold=line_blob_size, area_threshold=line_blob_size, merge=True)
+#    test = img.find_rects(roi=lines_roi, threshold=0)
+#    for rect in test:
+#        print(rect)
+#        img.draw_rectangle(rect[:4], color=(255, 0, 0))
 
-        if direction == 0:
-            if len(orange_blobs) > 0:
-                direction = 2
-            elif len(blue_blobs) > 0:
-                direction = 1
+    orange_blob_w = None
+    orange_blob_h = None
+    max_width = 0
+    max_height = 0
+    for blob in orange_blobs:
+        if blob.w() >= img.width() * 0.4:
+            if blob.w() > max_width:
+                max_width = blob.w()
+                orange_blob_w = blob
+        if blob.h() >= lines_roi[3] * 0.4:
+            if blob.h() > max_height:
+                max_height = blob.h()
+                orange_blob_h = blob
+    orange_blob = orange_blob_w
+    if not orange_blob:
+        orange_blob = orange_blob_h
 
-#        img.draw_rectangle(wall_roi, color=(255, 255, 0))
+    blue_blob_w = None
+    blue_blob_h = None
+    max_width = 0
+    max_height = 0
+    for blob in blue_blobs:
+        if blob.w() >= img.width() * 0.4:
+            if blob.w() > max_width:
+                max_width = blob.w()
+                blue_blob_w = blob
+        if blob.h() >= lines_roi[3] * 0.4:
+            if blob.h() > max_height:
+                max_height = blob.h()
+                blue_blob_h = blob
+    blue_blob = blue_blob_w
+    if not blue_blob:
+        blue_blob = blue_blob_h
+
+    if orange_blob:
+        img.draw_edges(orange_blob.min_corners(), color=(255, 0, 0))
+        img.draw_line(orange_blob.major_axis_line(), color=(0, 255, 0))
+        img.draw_line(orange_blob.minor_axis_line(), color=(0, 255, 0))
+    if blue_blob:
+        img.draw_edges(blue_blob.min_corners(), color=(255, 0, 0))
+        img.draw_line(blue_blob.major_axis_line(), color=(0, 0, 255))
+        img.draw_line(blue_blob.minor_axis_line(), color=(0, 0, 255))
+
+    if direction == 0:
+        if orange_blob:
+            direction = 2
+        elif blue_blob:
+            direction = 1
+
+    if orange_blob and direction == 2:
+        has_line = True
+    elif blue_blob and direction == 1:
+        has_line = True
+
+    if final:
+        red_blobs = img.find_blobs(red_threshold, roi=cubes_roi, pixels_threshold=min_cube_size, area_threshold=min_cube_size, merge=True)
+        green_blobs = img.find_blobs(green_threshold, roi=cubes_roi, pixels_threshold=min_cube_size, area_threshold=min_cube_size, merge=True)
+
+#        img.draw_rectangle(cubes_roi, color=(0,0,255))
 
         msg = "0\n"
-        time_now = -1
-        avoid_cubes = True
-        for blob in wall_blobs:
-            # Draw a rectangle around each blob
-#            wall_height = blob.rect()[3]
-#            if wall_height > wall_height_threshold:
-#                if time.time() - last_time > constant_height_time:
-#                    msg = "1\n"
-#            else:
-#                time_now = time.time()
-#            img.draw_rectangle(blob.rect(), color=(255, 255, 255))
-#            img.draw_cross(blob.cx(), blob.cy())
+        max_area = 0
+        color = 'none'
+        saved_cube = None
+        for blob in red_blobs:
+            if blob.density() >= density_thr and blob.area() > max_area:
+                max_area = blob.area()
+                saved_cube = blob
+                color = 'red'
+#            if blob.density() >= density_thr:
+#                img.draw_rectangle(blob.rect())
+#                img.draw_cross(blob.cx(), blob.cy())
+        for blob in green_blobs:
+            if blob.density() >= density_thr and blob.area() > max_area:
+                max_area = blob.area()
+                saved_cube = blob
+                color = 'green'
+#            if blob.density() >= density_thr:
+#                img.draw_rectangle(blob.rect())
+#                img.draw_cross(blob.cx(), blob.cy())
 
-            if time.time() - last_time_wall > constant_height_time:
-                msg = str(direction) + "\n"
+        if saved_cube != None:
+            img.draw_rectangle(saved_cube.rect())
+            img.draw_cross(saved_cube.cx(), saved_cube.cy())
+#            print(saved_cube.pixels())
+
+            if (color == 'red' and saved_cube.pixels() >= max_cube_size_red) or (color == 'green' and saved_cube.pixels() >= max_cube_size_green):
+                img.draw_cross(saved_cube.cx(), saved_cube.cy(), color=(0, 255, 0))
+                if uart.any() == 0:
+                    if color == 'red':
+                        uart.write('R\n')
+#                        print('R\n')
+                    else:
+                        uart.write('G\n')
+#                        print('G\n')
             else:
-                time_now = time.time()
-
-        if time_now != -1:
-            last_time_wall = time_now
-
-        if uart.any() == 0:
-            uart.write(msg)
-            print(msg)
+                if color == 'red':
+                    err = saved_cube.cx() - img.width() / 2
+                    steering = err * kp + (err - err_old) * kd
+                    steering = -clamp(steering, -1, 1)
+                    err_old = err
+                    msg = 'r' + str(steering) + '\n'
+                else:
+                    err = saved_cube.cx() - img.width() / 2
+                    steering = err * kp + (err - err_old) * kd
+                    steering = -clamp(steering, -1, 1)
+                    err_old = err
+                    msg = 'g' + str(steering) + '\n'
+                if uart.any() == 0:
+                    if has_line:
+                        if (color == 'red' and direction == 1) or (color == 'green' and direction == 2):
+                            uart.write(msg)
+                            while uart.any() != 0:
+                                time.sleep_ms(0)
+                            uart.write(str(direction) + '\n')
+                        else:
+                            uart.write(str(direction) + '\n')
+                    else:
+                        uart.write(msg)
+#                        print(msg)
+        elif has_line and uart.any() == 0:
+            uart.write(str(direction) + '\n')
+#        print(str(has_line) + '\n')
+    else:
+        if has_line and uart.any() == 0:
+            uart.write(str(direction) + '\n')

@@ -12,6 +12,12 @@ double gyro_last_read_time = 0;
 double drifts_x, drifts_y, drifts_z;
 
 // -----Gyro-----
+double current_angle_gyro = 0;
+double kp_gyro = 0.025;
+double ki_gyro = 0;
+double kd_gyro = 0.042;
+double pid_error_gyro, pid_last_error_gyro = 0;
+
 double gx, gy, gz;
 long last_gyro_read;
 long gyro_read_interval = 1;

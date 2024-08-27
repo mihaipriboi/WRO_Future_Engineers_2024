@@ -1,8 +1,8 @@
 // -----Servo-----
 #define SERVO_PIN D2
-#define ANGLE_MIN 10 // 10
-#define ANGLE_MID 50 // 50
-#define ANGLE_MAX 90 // 86
+#define ANGLE_MIN 9 // 10
+#define ANGLE_MID 49 // 50
+#define ANGLE_MAX 89 // 90
 #define ANGLE_VARIANCE_THRESHOLD (ANGLE_MAX * 0.4)
 #define STEP 4
 Servo servo;
@@ -39,7 +39,6 @@ void servo_setup() {
   // Serial.println("after ANGLE_MIN");
   for (int deg = servo.read() + 1; deg <= ANGLE_MID; deg++)
     servo.write(deg);
-  delay(500);
   // Serial.println("after ANGLE_MID");
   for (int deg = servo.read() + 1; deg <= ANGLE_MAX; deg++)
     servo.write(deg);
@@ -67,7 +66,6 @@ void move_motor(double speed) {  // move the motor with a given speed in the [0,
     digitalWrite(AIN2, LOW);
   }
   else if (dir == -1) {
-    Serial.println("back");
     digitalWrite(AIN1, LOW);
     digitalWrite(AIN2, HIGH);
   }
@@ -78,9 +76,19 @@ void move_motor(double speed) {  // move the motor with a given speed in the [0,
   ledcWrite(DRIVER_PWM_CHANNEL, (int)speed);
 }
 
+void custom_delay(long long delay_time) {
+  long long start_time = millis();
+  while (millis() - start_time < delay_time) {
+    read_gyro(false);
+    while (Serial0.available() > 0) { // if we have some characters waiting
+      Serial0.read(); // flush the character
+    }
+  }
+}
+
 void motor_break(long long break_time) {
   move_motor(-3);
-  delay(break_time);
+  custom_delay(break_time);
 }
 
 double read_motor_cm() {  // getting the distance driven by the motor in cm
@@ -103,6 +111,45 @@ void update_servo() {
     }
     else if (current_angle_servo > goal_deg) {
       servo.write(max(current_angle_servo - STEP, ANGLE_MIN));
+    }
+  }
+}
+
+void move_until_angle(double speed, double gyro_offset) {
+  int sign = 1;
+  if (speed < 0)
+    sign = -1;
+  read_gyro(false);
+  double err = current_angle_gyro + gyro_offset - gx;
+  while (abs(err) >= 10) {
+    read_gyro(false);
+    err = current_angle_gyro + gyro_offset - gx;
+    pid_error_gyro = (err) * kp_gyro + (pid_error_gyro - pid_last_error_gyro) * kd_gyro;
+    pid_last_error_gyro = pid_error_gyro;
+    move_servo(pid_error_gyro * sign);
+    update_servo();
+    move_motor(speed);
+    while (Serial0.available() > 0) { // if we have some characters waiting
+      Serial0.read(); // flush the character
+    }
+  }
+}
+
+void move_cm_gyro(double dis, double speed, double gyro_offset) {
+  double start_cm = read_motor_cm();
+  int sign = 1;
+  if (speed < 0)
+    sign = -1;
+  while (abs(read_motor_cm() - start_cm) < dis) {
+    read_gyro(false);
+    double err = current_angle_gyro + gyro_offset - gx;
+    pid_error_gyro = (err) * kp_gyro + (pid_error_gyro - pid_last_error_gyro) * kd_gyro;
+    pid_last_error_gyro = pid_error_gyro;
+    move_servo(pid_error_gyro * sign);
+    update_servo();
+    move_motor(speed);
+    while (Serial0.available() > 0) { // if we have some characters waiting
+      Serial0.read(); // flush the character
     }
   }
 }

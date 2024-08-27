@@ -1,45 +1,42 @@
-// -----Pid logic-----
+// -----Cases-----
 #define PID 0
 #define STOP 1
 #define FOLLOW_CUBE 2
-#define PASS_CUBE 3
-#define CORRECTION_ANGLE 30
-#define FORWARD_DISTANCE1 40
-#define FORWARD_DISTANCE2 55
+#define AFTER_CUBE 3
+
+// -----Velocities and distances-----
+#define CORRECTION_ANGLE 50
+#define AVOIDANCE_ANGLE 50
+#define FORWARD_DISTANCE 30
+#define CORNER_DISTANCE_FINAL 28
+#define CORNER_DISTANCE_QUALI 42 // maybe 40 if the battery is overcharged
+#define MOTOR_SPEED 100
 
 double avoid_cube_angle = 0;
 
 int CASE = PID;
-int OUTER_WALL_DIRECTION = 0;
-int GYRO_OFFSET = 5;
 int turn_direction = 0;
-int motor_speed = 60;
-int pass_speed = 60;
-int start_avoid_dis1 = 0;
-int start_avoid_dis2 = 0;
+int delay_walls = 250;
+int cube_last = 0;
 
-int loop_cnt = 0;
-int current_angle_gyro = 0;
-
-double kp_gyro = 0.025;
-double ki_gyro = 0;
-double kd_gyro = 0.042;
-double pid_error_gyro, pid_last_error_gyro = 0;
-
-bool flag = false;
-int last_cube_color = 0;
+void pass_cube(int cube_last) {
+  // motor_break(1000);
+  move_until_angle(MOTOR_SPEED, cube_last * -AVOIDANCE_ANGLE);
+  // motor_break(1000);
+  move_cm_gyro(12.5, MOTOR_SPEED, cube_last * -AVOIDANCE_ANGLE);
+  // motor_break(1000);
+  CASE = AFTER_CUBE;
+}
 
 void execute(String cmd) {
   if (cmd[0] == 'R' || cmd[0] == 'G') {
-    start_avoid_dis1 = read_motor_cm();
-    CASE = PASS_CUBE;
-    
     if (cmd[0] == 'R') {
-      last_cube_color = 1;
+      cube_last = 1;
     }
     else {
-      last_cube_color = -1;
+      cube_last = -1;
     }
+    pass_cube(cube_last);
     return;
   }
   int pos = 0, sign = 1;
@@ -55,25 +52,48 @@ void execute(String cmd) {
   if (cmd[0] == 'r' || cmd[0] == 'g') {
     avoid_cube_angle = val * sign;
     CASE = FOLLOW_CUBE;
+    // if (cmd[0] == 'g')
+    //   motor_break(10000);
+    return;
+  } else {
+    CASE = PID;
   }
-  else {
-    int msg = (int)val;
-    if (msg) {
-      CASE = PID;
-      last_cube_color = 0;
-      flag = 1;
-      if (msg == 1) { // blue line
-        turn_direction = 1;
-        GYRO_OFFSET = 5;
-      }
-      else { // orange line
-        turn_direction = -1;
-        GYRO_OFFSET = 3;
-      }
-      OUTER_WALL_DIRECTION = -turn_direction;
+  
+  int msg = (int)val;
+  if (msg) {
+    if (msg == 1) { // blue line
+      turn_direction = 1;
     }
-    else {
-      flag = turn_direction = 0;
+    else { // orange line
+      turn_direction = -1;
+    }
+    if (millis() - last_rotate > delay_walls) {
+      if (abs(current_angle_gyro - gx) < 2.5) {
+        move_cm_gyro(CORNER_DISTANCE_FINAL, MOTOR_SPEED, 0); // change according to the task
+      }
+      else {
+        move_until_angle(MOTOR_SPEED, turn_direction * 15);
+      }
+      // else if ((current_angle_gyro - gx) * turn_direction >= 10 * turn_direction) {
+      //   move_cm_gyro(20, MOTOR_SPEED, 0);
+      //   motor_break(100);
+      //   move_until_angle(-MOTOR_SPEED, -turn_direction * 90);
+      //   motor_break(100);
+      //   move_cm_gyro(25, MOTOR_SPEED, -turn_direction * 90);
+      //   move_until_angle(MOTOR_SPEED, turn_direction * 90);
+      //   // motor_break(1000);
+      // }
+      // else {
+      //   move_until_angle(MOTOR_SPEED, 0);
+      //   // motor_break(100);
+      //   // move_cm_gyro(3, -MOTOR_SPEED, 0);
+      //   // motor_break(100);
+      //   // motor_break(3000);
+      // }
+      current_angle_gyro += turn_direction * 90;
+      turns++;
+      delay_walls = 2500;
+      last_rotate = millis();
     }
   }
 }
@@ -88,54 +108,42 @@ void loop_function() {
   // }
 
   read_gyro(false);
-
   switch(CASE) {
     case PID: {
-      move_motor(motor_speed);
-      double err = current_angle_gyro - gx + GYRO_OFFSET * OUTER_WALL_DIRECTION;
+      double err = current_angle_gyro - gx;
+      // if (current_angle_gyro == turn_direction * 90 && turn_direction != 0 && abs(err) < 10)
+      //   motor_break(1000000000);
       if (abs(err) < 10 && millis() - last_rotate > 1500 && turns >= 12) {
         CASE = STOP;
-      }
-      else if (abs(err) < 10 && millis() - last_rotate > 1500 && flag != 0) {
-        current_angle_gyro += turn_direction * 90;
-        turns++;
-        last_rotate = millis();
       }
       else {
         pid_error_gyro = (err) * kp_gyro + (pid_error_gyro - pid_last_error_gyro) * kd_gyro;
         pid_last_error_gyro = pid_error_gyro;
         move_servo(pid_error_gyro);
       }
+      move_motor(MOTOR_SPEED);
       break;
     }
     case FOLLOW_CUBE: {
       move_servo(avoid_cube_angle);
-      move_motor(motor_speed);
+      move_motor(MOTOR_SPEED);
       break;
     }
-    case PASS_CUBE: {
-      if (read_motor_cm() - start_avoid_dis1 <= FORWARD_DISTANCE1) {
-        move_servo(last_cube_color * -0.5);
-        move_motor(pass_speed);
-        start_avoid_dis2 = read_motor_cm();
-      }
-      else if (read_motor_cm() - start_avoid_dis2 <= FORWARD_DISTANCE2) {
-        move_servo(last_cube_color * 1);
-        move_motor(pass_speed);
-      }
-      else if (abs(current_angle_gyro - gx) < 1)  {
+    case AFTER_CUBE: {
+      double err = current_angle_gyro - gx + cube_last * CORRECTION_ANGLE;
+      if (abs(err) < 10) {
         CASE = PID;
       }
       else {
-        pid_error_gyro = (current_angle_gyro  - gx) * kp_gyro + (pid_error_gyro - pid_last_error_gyro) * kd_gyro;
+        pid_error_gyro = (err) * kp_gyro + (pid_error_gyro - pid_last_error_gyro) * kd_gyro;
         pid_last_error_gyro = pid_error_gyro;
-
         move_servo(pid_error_gyro);
-        move_motor(pass_speed);
       }
+      move_motor(MOTOR_SPEED);
       break;
     }
     case STOP: {
+      delay(500);
       is_running = false;
       Serial.println("Stop case");
       motor_break(100000);
@@ -160,9 +168,7 @@ void loop_function() {
   while (Serial0.available() > 0) { // if we have some characters waiting
     char receivedChar = Serial0.read(); // we get the first character
     if (receivedChar == '\n') { // if it's the end of message marker
-      if (CASE != PASS_CUBE) {
-        execute(receivedMessage); // execute the received command from the OpenMV camera
-      }
+      execute(receivedMessage); // execute the received command from the OpenMV camera
       receivedMessage = ""; // Reset the received message
     }
     else {
