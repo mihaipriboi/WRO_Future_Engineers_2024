@@ -42,13 +42,13 @@ time.sleep(0.5)
 #red_threshold = [(40, 65, 30, 70, 20, 65)]
 red_threshold = [(40, 55, 45, 70, 20, 65)]
 
-green_threshold = [(45, 70, -50, -15, -20, 20), (25, 50, -30, -10, -30, 10)]
+green_threshold = [(45, 90, -50, -15, -20, 20), (25, 50, -30, -10, -30, 10)]
 #blue_threshold = [(10, 55, -15, 45, -45, -5)]
 blue_threshold = [(10, 80, -5, 25, -50, -5)]
 
 #orange_threshold = [(40, 80, 15, 50, 20, 75), (40, 85, -10, 40, 20, 80)]
-#orange_threshold = [(50, 85, 5, 50, -5, 70)]
-orange_threshold = [(50, 75, 5, 45, 15, 75)]
+#orange_threshold = [(50, 75, 5, 45, 15, 75)]
+orange_threshold = [(50, 80, 5, 45, 15, 75)]
 #orange_threshold = [(40, 85, -10, 40, 20, 80)]
 
 # ROI values
@@ -57,9 +57,10 @@ cubes_roi = (0, int(img.height() / 2 + 7), img.width(), int(img.height() / 2 - 7
 lines_roi = (0, int(img.height() / 2 + 14), img.width(), int(img.height() / 3 + 14))
 
 # Restrains values
+min_cube_height = 3
 min_cube_size = 35
-max_cube_size_red = 350 # 350
-max_cube_size_green = 600 # 450
+max_cube_size_red = 400 # 450
+max_cube_size_green = 400 # 600
 
 line_blob_size = 350
 density_thr = 0.6 # density >= 0.8 or solidity >= 1
@@ -132,14 +133,14 @@ while (True):
     if not blue_blob:
         blue_blob = blue_blob_h
 
-    if orange_blob:
-        img.draw_edges(orange_blob.min_corners(), color=(255, 0, 0))
-        img.draw_line(orange_blob.major_axis_line(), color=(0, 255, 0))
-        img.draw_line(orange_blob.minor_axis_line(), color=(0, 255, 0))
-    if blue_blob:
-        img.draw_edges(blue_blob.min_corners(), color=(255, 0, 0))
-        img.draw_line(blue_blob.major_axis_line(), color=(0, 0, 255))
-        img.draw_line(blue_blob.minor_axis_line(), color=(0, 0, 255))
+#    if orange_blob:
+#        img.draw_edges(orange_blob.min_corners(), color=(255, 0, 0))
+#        img.draw_line(orange_blob.major_axis_line(), color=(0, 255, 0))
+#        img.draw_line(orange_blob.minor_axis_line(), color=(0, 255, 0))
+#    if blue_blob:
+#        img.draw_edges(blue_blob.min_corners(), color=(255, 0, 0))
+#        img.draw_line(blue_blob.major_axis_line(), color=(0, 0, 255))
+#        img.draw_line(blue_blob.minor_axis_line(), color=(0, 0, 255))
 
     if direction == 0:
         if orange_blob:
@@ -163,7 +164,7 @@ while (True):
         color = 'none'
         saved_cube = None
         for blob in red_blobs:
-            if blob.density() >= density_thr and blob.area() > max_area:
+            if blob.density() >= density_thr and blob.h() > min_cube_height and blob.area() > max_area:
                 max_area = blob.area()
                 saved_cube = blob
                 color = 'red'
@@ -171,7 +172,7 @@ while (True):
 #                img.draw_rectangle(blob.rect())
 #                img.draw_cross(blob.cx(), blob.cy())
         for blob in green_blobs:
-            if blob.density() >= density_thr and blob.area() > max_area:
+            if blob.density() >= density_thr and blob.h() > min_cube_height and blob.area() > max_area:
                 max_area = blob.area()
                 saved_cube = blob
                 color = 'green'
@@ -180,12 +181,11 @@ while (True):
 #                img.draw_cross(blob.cx(), blob.cy())
 
         if saved_cube != None:
-            img.draw_rectangle(saved_cube.rect())
-            img.draw_cross(saved_cube.cx(), saved_cube.cy())
-#            print(saved_cube.pixels())
+#            img.draw_rectangle(saved_cube.rect())
+#            img.draw_cross(saved_cube.cx(), saved_cube.cy())
 
             if (color == 'red' and saved_cube.pixels() >= max_cube_size_red) or (color == 'green' and saved_cube.pixels() >= max_cube_size_green):
-                img.draw_cross(saved_cube.cx(), saved_cube.cy(), color=(0, 255, 0))
+#                img.draw_cross(saved_cube.cx(), saved_cube.cy(), color=(0, 255, 0))
                 if uart.any() == 0:
                     if color == 'red':
                         uart.write('R\n')
@@ -193,34 +193,32 @@ while (True):
                     else:
                         uart.write('G\n')
 #                        print('G\n')
+                    if has_line: # maybe add centroid inclusion checker
+                        while uart.any() != 0:
+                            time.sleep_ms(0)
+                        uart.write(str(direction) + '\n')
+#                        print(str(direction))
             else:
+                err = saved_cube.cx() - img.width() / 2
+                steering = err * kp + (err - err_old) * kd
+                steering = -clamp(steering, -1, 1)
+                err_old = err
                 if color == 'red':
-                    err = saved_cube.cx() - img.width() / 2
-                    steering = err * kp + (err - err_old) * kd
-                    steering = -clamp(steering, -1, 1)
-                    err_old = err
                     msg = 'r' + str(steering) + '\n'
                 else:
-                    err = saved_cube.cx() - img.width() / 2
-                    steering = err * kp + (err - err_old) * kd
-                    steering = -clamp(steering, -1, 1)
-                    err_old = err
                     msg = 'g' + str(steering) + '\n'
                 if uart.any() == 0:
-                    if has_line:
-                        if (color == 'red' and direction == 1) or (color == 'green' and direction == 2):
-                            uart.write(msg)
-                            while uart.any() != 0:
-                                time.sleep_ms(0)
-                            uart.write(str(direction) + '\n')
-                        else:
-                            uart.write(str(direction) + '\n')
-                    else:
-                        uart.write(msg)
-#                        print(msg)
+                    uart.write(msg)
+#                    print(msg)
+                    if has_line: # maybe add centroid inclusion checker
+                        while uart.any() != 0:
+                            time.sleep_ms(0)
+                        uart.write(str(direction) + '\n')
+#                        print(str(direction))
         elif has_line and uart.any() == 0:
             uart.write(str(direction) + '\n')
-#        print(str(has_line) + '\n')
+#            print(str(direction))
     else:
         if has_line and uart.any() == 0:
             uart.write(str(direction) + '\n')
+#            print(str(direction))

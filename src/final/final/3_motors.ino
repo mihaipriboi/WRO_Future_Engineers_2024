@@ -1,8 +1,8 @@
 // -----Servo-----
 #define SERVO_PIN D2
-#define ANGLE_MIN 9 // 10
-#define ANGLE_MID 49 // 50
-#define ANGLE_MAX 89 // 90
+#define ANGLE_MIN 8 // 10
+#define ANGLE_MID 48 // 50
+#define ANGLE_MAX 88 // 90
 #define ANGLE_VARIANCE_THRESHOLD (ANGLE_MAX * 0.4)
 #define STEP 4
 Servo servo;
@@ -120,10 +120,10 @@ void move_until_angle(double speed, double gyro_offset) {
   if (speed < 0)
     sign = -1;
   read_gyro(false);
-  double err = current_angle_gyro + gyro_offset - gx;
+  double err = gyro_offset - gx;
   while (abs(err) >= 10) {
     read_gyro(false);
-    err = current_angle_gyro + gyro_offset - gx;
+    err = gyro_offset - gx;
     pid_error_gyro = (err) * kp_gyro + (pid_error_gyro - pid_last_error_gyro) * kd_gyro;
     pid_last_error_gyro = pid_error_gyro;
     move_servo(pid_error_gyro * sign);
@@ -142,7 +142,7 @@ void move_cm_gyro(double dis, double speed, double gyro_offset) {
     sign = -1;
   while (abs(read_motor_cm() - start_cm) < dis) {
     read_gyro(false);
-    double err = current_angle_gyro + gyro_offset - gx;
+    double err = gyro_offset - gx;
     pid_error_gyro = (err) * kp_gyro + (pid_error_gyro - pid_last_error_gyro) * kd_gyro;
     pid_last_error_gyro = pid_error_gyro;
     move_servo(pid_error_gyro * sign);

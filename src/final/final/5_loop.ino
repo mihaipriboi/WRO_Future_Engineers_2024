@@ -7,8 +7,7 @@
 // -----Velocities and distances-----
 #define CORRECTION_ANGLE 50
 #define AVOIDANCE_ANGLE 50
-#define FORWARD_DISTANCE 30
-#define CORNER_DISTANCE_FINAL 28
+#define CORNER_DISTANCE_FINAL 10
 #define CORNER_DISTANCE_QUALI 42 // maybe 40 if the battery is overcharged
 #define MOTOR_SPEED 100
 
@@ -20,11 +19,10 @@ int delay_walls = 250;
 int cube_last = 0;
 
 void pass_cube(int cube_last) {
-  // motor_break(1000);
-  move_until_angle(MOTOR_SPEED, cube_last * -AVOIDANCE_ANGLE);
-  // motor_break(1000);
-  move_cm_gyro(12.5, MOTOR_SPEED, cube_last * -AVOIDANCE_ANGLE);
-  // motor_break(1000);
+  read_gyro(false);
+  int start_angle = gx;
+  move_until_angle(MOTOR_SPEED, start_angle + cube_last * -AVOIDANCE_ANGLE);
+  move_cm_gyro(7, MOTOR_SPEED, start_angle + cube_last * -AVOIDANCE_ANGLE);
   CASE = AFTER_CUBE;
 }
 
@@ -52,11 +50,7 @@ void execute(String cmd) {
   if (cmd[0] == 'r' || cmd[0] == 'g') {
     avoid_cube_angle = val * sign;
     CASE = FOLLOW_CUBE;
-    // if (cmd[0] == 'g')
-    //   motor_break(10000);
     return;
-  } else {
-    CASE = PID;
   }
   
   int msg = (int)val;
@@ -69,33 +63,21 @@ void execute(String cmd) {
     }
     if (millis() - last_rotate > delay_walls) {
       if (abs(current_angle_gyro - gx) < 2.5) {
-        move_cm_gyro(CORNER_DISTANCE_FINAL, MOTOR_SPEED, 0); // change according to the task
+        move_cm_gyro(CORNER_DISTANCE_FINAL, MOTOR_SPEED, current_angle_gyro); // change according to the task CORNER_DISTANCE_FINAL or CORNER_DISTANCE_QUALI
       }
-      else {
-        move_until_angle(MOTOR_SPEED, turn_direction * 15);
+      else if (CASE != FOLLOW_CUBE) {
+        move_until_angle(MOTOR_SPEED, current_angle_gyro + turn_direction * 20);
+        motor_break(2000);
+        move_cm_gyro(15, MOTOR_SPEED, current_angle_gyro); // change according to the task CORNER_DISTANCE_FINAL or CORNER_DISTANCE_QUALI
+        motor_break(2000);
       }
-      // else if ((current_angle_gyro - gx) * turn_direction >= 10 * turn_direction) {
-      //   move_cm_gyro(20, MOTOR_SPEED, 0);
-      //   motor_break(100);
-      //   move_until_angle(-MOTOR_SPEED, -turn_direction * 90);
-      //   motor_break(100);
-      //   move_cm_gyro(25, MOTOR_SPEED, -turn_direction * 90);
-      //   move_until_angle(MOTOR_SPEED, turn_direction * 90);
-      //   // motor_break(1000);
-      // }
-      // else {
-      //   move_until_angle(MOTOR_SPEED, 0);
-      //   // motor_break(100);
-      //   // move_cm_gyro(3, -MOTOR_SPEED, 0);
-      //   // motor_break(100);
-      //   // motor_break(3000);
-      // }
       current_angle_gyro += turn_direction * 90;
       turns++;
-      delay_walls = 2500;
+      delay_walls = 2500; // 2500
       last_rotate = millis();
     }
   }
+  CASE = PID;
 }
 
 void loop_function() {
@@ -111,9 +93,7 @@ void loop_function() {
   switch(CASE) {
     case PID: {
       double err = current_angle_gyro - gx;
-      // if (current_angle_gyro == turn_direction * 90 && turn_direction != 0 && abs(err) < 10)
-      //   motor_break(1000000000);
-      if (abs(err) < 10 && millis() - last_rotate > 1500 && turns >= 12) {
+      if (millis() - last_rotate > 1500 && turns >= 12) {
         CASE = STOP;
       }
       else {
@@ -125,13 +105,21 @@ void loop_function() {
       break;
     }
     case FOLLOW_CUBE: {
+      if (millis() - last_rotate > 1500 && turns >= 12) {
+        CASE = STOP;
+      }
       move_servo(avoid_cube_angle);
       move_motor(MOTOR_SPEED);
       break;
     }
     case AFTER_CUBE: {
+      if (millis() - last_rotate > 1500 && turns >= 12) {
+        CASE = STOP;
+      }
       double err = current_angle_gyro - gx + cube_last * CORRECTION_ANGLE;
-      if (abs(err) < 10) {
+      if (abs(err) < 5) {
+        move_cm_gyro(12, MOTOR_SPEED, current_angle_gyro + cube_last * CORRECTION_ANGLE);
+        // motor_break(2000);
         CASE = PID;
       }
       else {
@@ -143,7 +131,8 @@ void loop_function() {
       break;
     }
     case STOP: {
-      delay(500);
+      move_until_angle(MOTOR_SPEED, current_angle_gyro);
+      move_cm_gyro(10, MOTOR_SPEED, current_angle_gyro);
       is_running = false;
       Serial.println("Stop case");
       motor_break(100000);
