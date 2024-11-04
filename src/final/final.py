@@ -42,7 +42,7 @@ time.sleep(0.5)
 #red_threshold = [(40, 65, 30, 70, 20, 65)]
 red_threshold = [(40, 55, 45, 70, 20, 65)]
 
-green_threshold = [(45, 90, -50, -15, -20, 20), (21, 50, -30, -12, -32, 12)]
+green_threshold = [(45, 90, -50, -15, -20, 20), (15, 60, -45, -25, -5, 20), (21, 50, -30, -12, -32, 12)]
 #blue_threshold = [(10, 55, -15, 45, -45, -5)]
 blue_threshold = [(10, 80, -5, 25, -50, -5)]
 
@@ -59,8 +59,8 @@ lines_roi = (0, int(img.height() / 2 + 15), img.width(), int(img.height() / 3 + 
 # Restrains values
 min_cube_height = 3
 min_cube_size = 35
-max_cube_size_red = 400 # 450
-max_cube_size_green = 350 # 600
+max_cube_size_red = 400 # 400
+max_cube_size_green = 300 # 300
 
 line_blob_size = 350
 density_thr = 0.6 # density >= 0.8 or solidity >= 1
@@ -89,8 +89,6 @@ while (True):
 
     orange_blobs = img.find_blobs(orange_threshold, roi=lines_roi, pixels_threshold=line_blob_size, area_threshold=line_blob_size, merge=True)
     blue_blobs = img.find_blobs(blue_threshold, roi=lines_roi, pixels_threshold=line_blob_size, area_threshold=line_blob_size, merge=True)
-
-    has_line = False
 
 #    img.draw_rectangle(lines_roi, color=(0, 255, 0))
 
@@ -148,12 +146,13 @@ while (True):
         elif blue_blob:
             direction = 1
 
-    if orange_blob and direction == 2:
-        has_line = True
-    elif blue_blob and direction == 1:
-        has_line = True
-#    if orange_blob or blue_bob:
+    has_line = False
+#    if orange_blob and direction == 2:
 #        has_line = True
+#    elif blue_blob and direction == 1:
+#        has_line = True
+    if orange_blob or blue_blob:
+        has_line = True
 
     if final:
         red_blobs = img.find_blobs(red_threshold, roi=cubes_roi, pixels_threshold=min_cube_size, area_threshold=min_cube_size, merge=True)

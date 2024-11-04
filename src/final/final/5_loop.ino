@@ -1,22 +1,35 @@
+// -----Units of measurement-----
+// The velocities are on a -100 to 100 scale
+// The distances are in cm
+// The time is in ms
+// The angles are in degrees
+
+#define QUALI false
+
 // -----Cases-----
 #define PID 0
 #define STOP 1
 #define FOLLOW_CUBE 2
 #define AFTER_CUBE 3
 #define FIND_PARKING 4
+int CASE = PID;
+bool TURNED = false;
 
-// -----Velocities and distances-----
-#define CORRECTION_ANGLE 40
-#define AVOIDANCE_ANGLE 40
-#define CORNER_DISTANCE_FINAL 0
-#define CORNER_DISTANCE_QUALI 42 // maybe 40 if the battery is overcharged
-#define CORNER_DISTANCE_PARKING 45 // maybe 40 if the battery is overcharged
-#define MOTOR_SPEED 100
-
+// -----Angles-----
+#define GYRO_OFFSET_PARKING 0
+#define CORRECTION_ANGLE 45
+#define AVOIDANCE_ANGLE 45
 double avoid_cube_angle = 0;
 
-bool TURNED = false;
-int CASE = PID;
+// -----Distances-----
+#define CORNER_DISTANCE_FINAL 0
+#define CORNER_DISTANCE_QUALI 42 // maybe 40 if the battery is overcharged
+#define CORNER_DISTANCE_PARKING 70
+
+// -----Velocities-----
+#define MOTOR_SPEED 100
+
+// -----Logic-----
 int turn_direction = 0;
 int delay_walls = 250;
 int cube_last = 0;
@@ -30,10 +43,8 @@ void pass_cube(int cube_last) {
 }
 
 void execute(String cmd) {
-  if (CASE == FIND_PARKING && cmd[0] == 'P') {
-    // parking sequence
+  if (!valid_command(cmd))
     return;
-  }
 
   int pos = 0, sign = 1;
   if (cmd[pos] == 'r' || cmd[pos] == 'g')
@@ -44,21 +55,29 @@ void execute(String cmd) {
   else if (cmd[pos] == '-')
     sign = -1, pos++;
   double val = cmd.substring(pos).toDouble();
-  if (CASE != FIND_PARKING) {
-    if (cmd[0] == 'R' || cmd[0] == 'G') {
-      if (cmd[0] == 'R') {
-        cube_last = 1;
-      }
-      else {
-        cube_last = -1;
-      }
-      pass_cube(cube_last);
+
+  if (!QUALI) {
+    if (CASE == FIND_PARKING && cmd[0] == 'P') {
+      // parking sequence
       return;
     }
-    if (cmd[0] == 'r' || cmd[0] == 'g') {
-      avoid_cube_angle = val * sign;
-      CASE = FOLLOW_CUBE;
-      return;
+
+    if (CASE != FIND_PARKING) {
+      if (cmd[0] == 'R' || cmd[0] == 'G') {
+        if (cmd[0] == 'R') {
+          cube_last = 1;
+        }
+        else {
+          cube_last = -1;
+        }
+        pass_cube(cube_last);
+        return;
+      }
+      if (cmd[0] == 'r' || cmd[0] == 'g') {
+        avoid_cube_angle = val * sign;
+        CASE = FOLLOW_CUBE;
+        return;
+      }
     }
   }
   
@@ -73,15 +92,19 @@ void execute(String cmd) {
       }
     }
     if (millis() - last_rotate > delay_walls) {
-      if (abs(current_angle_gyro - gx) < 10) {
-        if (CASE == FIND_PARKING)
-          move_cm_gyro(CORNER_DISTANCE_PARKING, MOTOR_SPEED, current_angle_gyro);
+      if (CASE == FIND_PARKING) {
+        move_cm_gyro(CORNER_DISTANCE_PARKING, MOTOR_SPEED, current_angle_gyro);
+        // motor_break(1000000);
+      }
+      else if (abs(current_angle_gyro - gx) < 10) {
+        if (QUALI)
+          move_cm_gyro(CORNER_DISTANCE_QUALI, MOTOR_SPEED, current_angle_gyro);
         else
-          move_cm_gyro(CORNER_DISTANCE_FINAL, MOTOR_SPEED, current_angle_gyro); // change according to the task CORNER_DISTANCE_FINAL or CORNER_DISTANCE_QUALI
+          move_cm_gyro(CORNER_DISTANCE_FINAL, MOTOR_SPEED, current_angle_gyro);
       }
       else if (CASE != FOLLOW_CUBE) {
         move_until_angle(MOTOR_SPEED, current_angle_gyro + turn_direction * 20);
-        move_cm_gyro(7, MOTOR_SPEED, current_angle_gyro); // change according to the task CORNER_DISTANCE_FINAL or CORNER_DISTANCE_QUALI
+        move_cm_gyro(7, MOTOR_SPEED, current_angle_gyro);
       }
       current_angle_gyro += turn_direction * 90;
       turns++;
@@ -183,7 +206,7 @@ void loop_function() {
       break;
     }
     case FIND_PARKING: {
-      double err = current_angle_gyro - gx;
+      double err = current_angle_gyro - turn_direction * GYRO_OFFSET_PARKING - gx;
       pid_error_gyro = (err) * kp_gyro + (pid_error_gyro - pid_last_error_gyro) * kd_gyro;
       pid_last_error_gyro = pid_error_gyro;
       move_servo(pid_error_gyro);

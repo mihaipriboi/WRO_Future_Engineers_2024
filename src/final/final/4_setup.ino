@@ -2,9 +2,9 @@ String receivedMessage;
 
 void blink_led(int pin, int duration) {
   digitalWrite(pin, HIGH);
-  delay(duration);
+  custom_delay(duration);
   digitalWrite(pin, LOW);
-  delay(duration);
+  custom_delay(duration);
 }
 
 void setup_led(int pin) {
@@ -18,6 +18,10 @@ void setup_periferics() {
 }
 
 void comm_setup() {
+  Serial.begin(9600);
+  // while(!Serial);
+  blink_led(LED_BUILTIN, 500);
+
   Serial0.begin(19200);
   while(!Serial0);
   blink_led(LED_BUILTIN, 500);
@@ -28,13 +32,11 @@ void setup_function() {
   // put your setup code here, to run once:
   setup_periferics();
 
-  Serial.begin(9600);
-  // while(!Serial);
+  comm_setup();
 
   motor_driver_setup(); // must be motor driver setup first and then servo setup
   servo_setup();
 
-  comm_setup();
   gyro_setup(true);
 
   digitalWrite(LED_BUILTIN, HIGH);
