@@ -3,16 +3,19 @@
 #define STOP 1
 #define FOLLOW_CUBE 2
 #define AFTER_CUBE 3
+#define FIND_PARKING 4
 
 // -----Velocities and distances-----
-#define CORRECTION_ANGLE 50
-#define AVOIDANCE_ANGLE 50
-#define CORNER_DISTANCE_FINAL 10
+#define CORRECTION_ANGLE 40
+#define AVOIDANCE_ANGLE 40
+#define CORNER_DISTANCE_FINAL 0
 #define CORNER_DISTANCE_QUALI 42 // maybe 40 if the battery is overcharged
+#define CORNER_DISTANCE_PARKING 45 // maybe 40 if the battery is overcharged
 #define MOTOR_SPEED 100
 
 double avoid_cube_angle = 0;
 
+bool TURNED = false;
 int CASE = PID;
 int turn_direction = 0;
 int delay_walls = 250;
@@ -27,18 +30,12 @@ void pass_cube(int cube_last) {
 }
 
 void execute(String cmd) {
-  if (cmd[0] == 'R' || cmd[0] == 'G') {
-    if (cmd[0] == 'R') {
-      cube_last = 1;
-    }
-    else {
-      cube_last = -1;
-    }
-    pass_cube(cube_last);
+  if (CASE == FIND_PARKING && cmd[0] == 'P') {
+    // parking sequence
     return;
   }
+
   int pos = 0, sign = 1;
-  String motor = "";
   if (cmd[pos] == 'r' || cmd[pos] == 'g')
     pos++;
   // manually going over the signs since the .toDouble function wouldn't parse them on its own
@@ -47,37 +44,51 @@ void execute(String cmd) {
   else if (cmd[pos] == '-')
     sign = -1, pos++;
   double val = cmd.substring(pos).toDouble();
-  if (cmd[0] == 'r' || cmd[0] == 'g') {
-    avoid_cube_angle = val * sign;
-    CASE = FOLLOW_CUBE;
-    return;
+  if (CASE != FIND_PARKING) {
+    if (cmd[0] == 'R' || cmd[0] == 'G') {
+      if (cmd[0] == 'R') {
+        cube_last = 1;
+      }
+      else {
+        cube_last = -1;
+      }
+      pass_cube(cube_last);
+      return;
+    }
+    if (cmd[0] == 'r' || cmd[0] == 'g') {
+      avoid_cube_angle = val * sign;
+      CASE = FOLLOW_CUBE;
+      return;
+    }
   }
   
   int msg = (int)val;
   if (msg) {
-    if (msg == 1) { // blue line
-      turn_direction = 1;
-    }
-    else { // orange line
-      turn_direction = -1;
+    if (turn_direction == 0) {
+      if (msg == 1) { // blue line
+        turn_direction = 1;
+      }
+      else { // orange line
+        turn_direction = -1;
+      }
     }
     if (millis() - last_rotate > delay_walls) {
-      if (abs(current_angle_gyro - gx) < 2.5) {
-        move_cm_gyro(CORNER_DISTANCE_FINAL, MOTOR_SPEED, current_angle_gyro); // change according to the task CORNER_DISTANCE_FINAL or CORNER_DISTANCE_QUALI
+      if (abs(current_angle_gyro - gx) < 10) {
+        if (CASE == FIND_PARKING)
+          move_cm_gyro(CORNER_DISTANCE_PARKING, MOTOR_SPEED, current_angle_gyro);
+        else
+          move_cm_gyro(CORNER_DISTANCE_FINAL, MOTOR_SPEED, current_angle_gyro); // change according to the task CORNER_DISTANCE_FINAL or CORNER_DISTANCE_QUALI
       }
       else if (CASE != FOLLOW_CUBE) {
         move_until_angle(MOTOR_SPEED, current_angle_gyro + turn_direction * 20);
-        motor_break(2000);
-        move_cm_gyro(15, MOTOR_SPEED, current_angle_gyro); // change according to the task CORNER_DISTANCE_FINAL or CORNER_DISTANCE_QUALI
-        motor_break(2000);
+        move_cm_gyro(7, MOTOR_SPEED, current_angle_gyro); // change according to the task CORNER_DISTANCE_FINAL or CORNER_DISTANCE_QUALI
       }
       current_angle_gyro += turn_direction * 90;
       turns++;
-      delay_walls = 2500; // 2500
+      delay_walls = 2500;
       last_rotate = millis();
     }
   }
-  CASE = PID;
 }
 
 void loop_function() {
@@ -92,8 +103,18 @@ void loop_function() {
   read_gyro(false);
   switch(CASE) {
     case PID: {
+      if (!TURNED && turns == 8 && cube_last == 1) {
+        if ((current_angle_gyro - turn_direction * 90) - gx > 0) {
+          current_angle_gyro += turn_direction * 90;
+        }
+        else {
+          current_angle_gyro -= turn_direction * 270;
+        }
+        turn_direction *= -1;
+        TURNED = true;
+      }
       double err = current_angle_gyro - gx;
-      if (millis() - last_rotate > 1500 && turns >= 12) {
+      if (millis() - last_rotate > 1500 && turns >= 11) {
         CASE = STOP;
       }
       else {
@@ -105,37 +126,68 @@ void loop_function() {
       break;
     }
     case FOLLOW_CUBE: {
-      if (millis() - last_rotate > 1500 && turns >= 12) {
+      if (!TURNED && turns == 8 && cube_last == 1) {
+        if ((current_angle_gyro - turn_direction * 90) - gx > 0) {
+          current_angle_gyro += turn_direction * 90;
+        }
+        else {
+          current_angle_gyro -= turn_direction * 270;
+        }
+        turn_direction *= -1;
+        TURNED = true;
+        CASE = PID;
+      }
+      if (millis() - last_rotate > 1500 && turns >= 11) {
         CASE = STOP;
       }
-      move_servo(avoid_cube_angle);
-      move_motor(MOTOR_SPEED);
+      else {
+        move_servo(avoid_cube_angle);
+        move_motor(MOTOR_SPEED);
+      }
       break;
     }
     case AFTER_CUBE: {
-      if (millis() - last_rotate > 1500 && turns >= 12) {
-        CASE = STOP;
-      }
-      double err = current_angle_gyro - gx + cube_last * CORRECTION_ANGLE;
-      if (abs(err) < 5) {
-        move_cm_gyro(12, MOTOR_SPEED, current_angle_gyro + cube_last * CORRECTION_ANGLE);
-        // motor_break(2000);
+      if (!TURNED && turns == 8 && cube_last == 1) {
+        if ((current_angle_gyro - turn_direction * 90) - gx > 0) {
+          current_angle_gyro += turn_direction * 90;
+        }
+        else {
+          current_angle_gyro -= turn_direction * 270;
+        }
+        turn_direction *= -1;
+        TURNED = true;
         CASE = PID;
       }
+      if (millis() - last_rotate > 1500 && turns >= 11) {
+        CASE = STOP;
+      }
       else {
-        pid_error_gyro = (err) * kp_gyro + (pid_error_gyro - pid_last_error_gyro) * kd_gyro;
-        pid_last_error_gyro = pid_error_gyro;
-        move_servo(pid_error_gyro);
+        double err = current_angle_gyro - gx + cube_last * CORRECTION_ANGLE;
+        if (abs(err) < 5) {
+          move_cm_gyro(10, MOTOR_SPEED, current_angle_gyro + cube_last * CORRECTION_ANGLE);
+          CASE = PID;
+        }
+        else {
+          pid_error_gyro = (err) * kp_gyro + (pid_error_gyro - pid_last_error_gyro) * kd_gyro;
+          pid_last_error_gyro = pid_error_gyro;
+          move_servo(pid_error_gyro);
+        }
       }
       move_motor(MOTOR_SPEED);
       break;
     }
     case STOP: {
       move_until_angle(MOTOR_SPEED, current_angle_gyro);
-      move_cm_gyro(10, MOTOR_SPEED, current_angle_gyro);
-      is_running = false;
-      Serial.println("Stop case");
-      motor_break(100000);
+      motor_break(3000);
+      CASE = FIND_PARKING;
+      break;
+    }
+    case FIND_PARKING: {
+      double err = current_angle_gyro - gx;
+      pid_error_gyro = (err) * kp_gyro + (pid_error_gyro - pid_last_error_gyro) * kd_gyro;
+      pid_last_error_gyro = pid_error_gyro;
+      move_servo(pid_error_gyro);
+      move_motor(MOTOR_SPEED);
       break;
     }
     default: {
@@ -153,7 +205,7 @@ void loop_function() {
 
   update_servo();
 
-  // prioritize executing pending commands
+  // execute pending commands
   while (Serial0.available() > 0) { // if we have some characters waiting
     char receivedChar = Serial0.read(); // we get the first character
     if (receivedChar == '\n') { // if it's the end of message marker

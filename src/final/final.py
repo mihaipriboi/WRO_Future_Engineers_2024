@@ -42,7 +42,7 @@ time.sleep(0.5)
 #red_threshold = [(40, 65, 30, 70, 20, 65)]
 red_threshold = [(40, 55, 45, 70, 20, 65)]
 
-green_threshold = [(45, 90, -50, -15, -20, 20), (25, 50, -30, -10, -30, 10)]
+green_threshold = [(45, 90, -50, -15, -20, 20), (21, 50, -30, -12, -32, 12)]
 #blue_threshold = [(10, 55, -15, 45, -45, -5)]
 blue_threshold = [(10, 80, -5, 25, -50, -5)]
 
@@ -53,14 +53,14 @@ orange_threshold = [(50, 80, 5, 45, 15, 75)]
 
 # ROI values
 img = sensor.snapshot()
-cubes_roi = (0, int(img.height() / 2 + 7), img.width(), int(img.height() / 2 - 7))
-lines_roi = (0, int(img.height() / 2 + 14), img.width(), int(img.height() / 3 + 14))
+cubes_roi = (0, int(img.height() / 2 + 8), img.width(), int(img.height() / 2 - 8))
+lines_roi = (0, int(img.height() / 2 + 15), img.width(), int(img.height() / 3 + 15))
 
 # Restrains values
 min_cube_height = 3
 min_cube_size = 35
 max_cube_size_red = 400 # 450
-max_cube_size_green = 400 # 600
+max_cube_size_green = 350 # 600
 
 line_blob_size = 350
 density_thr = 0.6 # density >= 0.8 or solidity >= 1
@@ -152,6 +152,8 @@ while (True):
         has_line = True
     elif blue_blob and direction == 1:
         has_line = True
+#    if orange_blob or blue_bob:
+#        has_line = True
 
     if final:
         red_blobs = img.find_blobs(red_threshold, roi=cubes_roi, pixels_threshold=min_cube_size, area_threshold=min_cube_size, merge=True)

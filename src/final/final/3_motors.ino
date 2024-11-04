@@ -1,8 +1,8 @@
 // -----Servo-----
 #define SERVO_PIN D2
-#define ANGLE_MIN 8 // 10
-#define ANGLE_MID 48 // 50
-#define ANGLE_MAX 88 // 90
+#define ANGLE_MIN 7 // 10
+#define ANGLE_MID 47 // 50
+#define ANGLE_MAX 87 // 90
 #define ANGLE_VARIANCE_THRESHOLD (ANGLE_MAX * 0.4)
 #define STEP 4
 Servo servo;
