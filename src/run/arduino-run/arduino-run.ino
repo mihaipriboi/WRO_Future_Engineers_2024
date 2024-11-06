@@ -15,7 +15,6 @@ void setup() {
 bool is_running = false;
 
 uint32_t last_rotate = 0, time_elapsed = 0;
-int turns = 0, freq = 0;
 
 void loop() {
   int is_start_btn_on = digitalRead(BTN_PIN);

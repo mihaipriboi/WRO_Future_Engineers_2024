@@ -51,10 +51,13 @@ blue_threshold = [(10, 80, -5, 25, -50, -5)]
 orange_threshold = [(50, 80, 5, 45, 15, 75)]
 #orange_threshold = [(40, 85, -10, 40, 20, 80)]
 
+parking_threshold = [(25, 63, 45, 65, -10, 10)]
+
 # ROI values
 img = sensor.snapshot()
 cubes_roi = (0, int(img.height() / 2 + 8), img.width(), int(img.height() / 2 - 8))
 lines_roi = (0, int(img.height() / 2 + 15), img.width(), int(img.height() / 3 + 15))
+parking_roi = (0, 56, img.width(), 20)
 
 # Restrains values
 min_cube_height = 3
@@ -63,6 +66,7 @@ max_cube_size_red = 400 # 400
 max_cube_size_green = 300 # 300
 
 line_blob_size = 350
+parking_blob_size = 1500
 density_thr = 0.6 # density >= 0.8 or solidity >= 1
 
 # PID values
@@ -157,6 +161,7 @@ while (True):
     if final:
         red_blobs = img.find_blobs(red_threshold, roi=cubes_roi, pixels_threshold=min_cube_size, area_threshold=min_cube_size, merge=True)
         green_blobs = img.find_blobs(green_threshold, roi=cubes_roi, pixels_threshold=min_cube_size, area_threshold=min_cube_size, merge=True)
+        parking_blobs = img.find_blobs(parking_threshold, roi=parking_roi, pixels_threshold=parking_blob_size, area_threshold=parking_blob_size, merge=True)
 
 #        img.draw_rectangle(cubes_roi, color=(0,0,255))
 
@@ -219,6 +224,11 @@ while (True):
         elif has_line and uart.any() == 0:
             uart.write(str(direction) + '\n')
 #            print(str(direction))
+        if has_line: # maybe add centroid inclusion checker
+            while uart.any() != 0:
+                time.sleep_ms(0)
+            uart.write('P\n')
+#            print('P\n')
     else:
         if has_line and uart.any() == 0:
             uart.write(str(direction) + '\n')

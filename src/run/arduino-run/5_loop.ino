@@ -24,7 +24,8 @@ double avoid_cube_angle = 0;
 // -----Distances-----
 #define CORNER_DISTANCE_FINAL 0
 #define CORNER_DISTANCE_QUALI 42 // maybe 40 if the battery is overcharged
-#define CORNER_DISTANCE_PARKING 70
+#define CORNER_DISTANCE_PARKING 60
+#define CORNER_DISTANCE_PARKING_FIRST_TURN 70
 
 // -----Velocities-----
 #define MOTOR_SPEED 100
@@ -33,6 +34,9 @@ double avoid_cube_angle = 0;
 int turn_direction = 0;
 int delay_walls = 250;
 int cube_last = 0;
+int turns_parking = 0;
+int turns = 0;
+int freq = 0;
 
 void pass_cube(int cube_last) {
   read_gyro(false);
@@ -61,6 +65,9 @@ void execute(String cmd) {
       // parking sequence
       return;
     }
+
+    if (cmd[0] == 'P')
+      return;
 
     if (CASE != FIND_PARKING) {
       if (cmd[0] == 'R' || cmd[0] == 'G') {
@@ -93,7 +100,11 @@ void execute(String cmd) {
     }
     if (millis() - last_rotate > delay_walls) {
       if (CASE == FIND_PARKING) {
-        move_cm_gyro(CORNER_DISTANCE_PARKING, MOTOR_SPEED, current_angle_gyro);
+        if (turns_parking == 0)
+          move_cm_gyro(CORNER_DISTANCE_PARKING_FIRST_TURN, MOTOR_SPEED, current_angle_gyro);
+        else
+          move_cm_gyro(CORNER_DISTANCE_PARKING, MOTOR_SPEED, current_angle_gyro);
+        turns_parking++;
         // motor_break(1000000);
       }
       else if (abs(current_angle_gyro - gx) < 10) {
@@ -202,6 +213,7 @@ void loop_function() {
     case STOP: {
       move_until_angle(MOTOR_SPEED, current_angle_gyro);
       motor_break(3000);
+      turns_parking = 0;
       CASE = FIND_PARKING;
       break;
     }

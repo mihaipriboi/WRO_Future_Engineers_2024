@@ -37,5 +37,7 @@ bool valid_command(String cmd) { // function that checks the validity of a comma
     if (cmd.length() != 1)
       return false;
   }
+  if (cmd[0] != 'r' || cmd[0] != 'g' || cmd[0] != 'R' || cmd[0] != 'G')
+    return false;
   return true;
 }
