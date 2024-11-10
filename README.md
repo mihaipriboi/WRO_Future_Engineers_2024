@@ -19,6 +19,7 @@
   * [IMU](#imu-sensor)
   * [OpenMV Cam H7 R2](#openmv-cam-h7-r2)
   * [Voltage Regulator](#voltage-regulator)
+  * [PCB Design](#pcb)
   * [Circuit Diagram](#circuit-diagram)
 * [Code for each component](#code-for-each-component)
   * [Drive Motor](#drive-motor-code)
@@ -28,15 +29,24 @@
 * [Obstacle Management](#obstacle-management)
   * [Qualification Round](#quali-management)
   * [Final Round](#final-management)
+* [Robot Construction Guide](#robot-construction-guide)
+  * [Step 0: Print the 3D parts](#3d-printing)
+  * [Step 1: Assemble the steering system](#steering-system-assembly)
+  * [Step 2: Assemble the powertrain](#powertrain-assembly)
+  * [Step 3: Attach the electronics](#electronics-attachment)
+  * [Step 4: Attach the wheels](#wheel-attachment)
+  * [Step 5: Final touches](#final-touches)
 * [Randomizer](#randomizer)
 * [Resources](#resources)
   * [3D Models](#3d-models-resources)
   * [Images](#images-resources)
+* [License](#copyright)
+---
 
 ### Team: Priboi Mihai, Nicola Victor, Bălan Teodor <a class="anchor" id="team-image"></a>
   ![Team](./team-photos/team-image.png)
 
-## Photos of our robot <b>TBD<b> <a class="anchor" id="robot-image"></a>
+## Photos of our robot <b style="color: red">TBD</b> <a class="anchor" id="robot-image"></a>
 
 | <img src="./robot-photos/front.jpeg" width="90%" /> | <img src="./robot-photos/back.jpeg" width="85%" /> | 
 | :--: | :--: | 
@@ -603,6 +613,71 @@ case PASS_CUBE: {
 
 <br>
 
+# Robot Construction Guide <a class="anchor" id="robot-construction-guide"></a>
+
+## Step 0: Print the 3D parts <a class="anchor" id="3d-printing"></a>
+
+The part files can be found in the `3d-models` folder. We used and recommend the [BambuLab X1-Carbon](https://bambulab.com/en/x1) 3D printer, with the following settings:
+ - Material: PLA
+ - Layer height: 0.2mm
+ - Infill: 20%
+ - Supports: Yes
+ - Raft: No
+ - Brim: Yes
+
+## Step 1: Assemble the steering system <a class="anchor" id="steering-system-assembly"></a>
+
+1. Mount the `servo` on the `chassis` using 2 zip ties, make sure to cut the excess of the zip ties so it doesnt interfere with the steering arm.
+
+2. Attach the `steering axle` to the `servo` using a ⌀ 2mm metal rod, approximately 4-5mm in length.
+
+3. Attach the `servo mount` to the `chassis` using the peg joints.
+
+4. Hold the `steering hubs` between the `chassis` and the `servo mount` and attach them with a ⌀ 2mm metal rod, approximately 20mm in length.
+
+5. Attach the `steering axle` to the `steering hubs` using two ⌀ 2mm metal rod, approximately 20mm in length.
+
+6. Inside the `steering hubs`, place a `Pin Connector Block`(<a href="https://www.bricklink.com/v2/catalog/catalogitem.page?P=39793&idColor=11#T=C&C=11">39793</a>) using pins. Put a `Axle 3L with Stop`(<a href="https://www.bricklink.com/v2/catalog/catalogitem.page?P=24316&idColor=11#T=C&C=11">24316</a>) inside the `Pin Connector Block`.
+
+## Step 2: Assemble the powertrain <a class="anchor" id="powertrain-assembly"></a>
+lugen the `chassis` using the peg joints.
+
+2. Attach the `motor` to the `motor support` using the `motor mounts` and *M3* screws.
+
+3. On the `motor`, attach the `gearmotor to axle` and, on the other end, attach a lego `Axle 3L`.
+
+4. On the other end of the `Axle 3L`, attach a lego `Gear 20 Tooth Double Bevel`(<a href="https://www.bricklink.com/v2/catalog/catalogitem.page?P=32269#T=C">32269</a>)
+
+5. The `chasiss` has a place for a differential, attach a `Gear Differential 28 Tooth Bevel`(<a href="https://www.bricklink.com/v2/catalog/catalogitem.page?P=62821b&name=Technic,%20Gear%20Differential%2028%20Tooth%20Bevel%20-%20Inner%20Tabs%20with%20Closed%20Center&category=%5BTechnic,%20Gear%5D#T=C">62821b</a>) there, connected to the `Gear 20 Tooth Double Bevel`. The differential should have 3 `Gear 12 Tooth Bevel`(<a href="https://www.bricklink.com/v2/catalog/catalogitem.page?P=6589#T=C">6589</a>) inside it. The differential should be attached to the `chassis` using lego `Axles 7L`. Where the `Axles 7L` go, there should be a half stud gap in the `chassis`, place a `Bush 1/2`(<a href="https://www.bricklink.com/v2/catalog/catalogitem.page?P=4265c&idColor=3#T=C&C=3">4265c</a>) on each side. This will hold the wheels in place better.
+
+## Step 3: Attach the electronics <a class="anchor" id="electronics-attachment"></a> 
+
+1. Make the `pcb` using a `10x24 prototype board`. Using the `electrical diagram` and the pcb images, solder the connections, and headers and the `voltage regulator`. Place the `Arduino Nano ESP32` and `motor driver` on the pcb. The pcb should be attached to the `pcb plaque` using screws.
+
+2. Place the `battery` in under the `pcb` in the place provided in the `chassis`.
+
+3. Use a `6x12 prototype board` to make a holder for the `power switch` and `start button`, which need to be souldered. On the bottom of the board, soulder headers so that you can use father-father wires to connect to the arduino. We used a longer prototype board and cut it to the desired size. The holder should be attached to the `chassis` using double sided tape. You can also soulder a `led` to the board and connect it to the arduino for debuging purposes.
+
+4. Attach the `IMU` to the `motor support` using screws. Soulder a wire on the `IMU` on the `INT1` pin.
+
+5. Attach the `camera` to the `chassis` using screws. The `camera` should be slighly tilted up.
+
+6. Connect all the wires according to the `electrical diagram`. The `camera` should be connected to the `Arduino` using the `UART` protocol. The `IMU` should be connected to the `Arduino` using the `I2C` protocol. The wires can be store bought, or you can make them yourself. We custom-made our wires to achieve the exact lengths needed and combined certain connections into single Dupont connectors—for example, the camera power, camera UART, and IMU I2C wires are each grouped within individual Dupont connectors.
+
+7. (Optional) All the wires that are longer than needed can be wrapped arrond the `chassis` to make the robot look cleaner. You can use zip ties to secure the wires in place.
+
+## Step 4: Attach the wheels <a class="anchor" id="wheel-attachment"></a>
+
+1. Attach the front `wheels`(<a href="https://www.bricklink.com/v2/catalog/catalogitem.page?P=39367pb01&idColor=11#T=C&C=11">39367pb01</a>) to the `Axles 3L with Stop`. Use a `Bush 1/2` on each side of the `wheels` to hold them in place.
+
+2. Attach the back `wheels`(<a href="https://www.bricklink.com/v2/catalog/catalogitem.page?P=39367pb01&idColor=11#T=C&C=11">39367pb01</a>)  to the `Axles 7L`. Use a `Bush 1/2` on each side of the `wheels` to hold them in place. Also add spacers so the wheels are on the same level as the front ones.
+
+## Step 5: Final touches <a class="anchor" id="final-touches"></a>
+
+1. Place a *100g* weight on the back of the robot and one on the `servo mount` to enhance stability and increase grip. The weights should stay in place, but you can stabilize them with some duct tape.
+
+<br>
+
 # Randomizer <a class="anchor" id="randomizer"></a>
 
 To ensure the robot's ability to adapt to any course, we developed a randomizer that generates a random sequence of colors and positions for the cubes. You can find this web application at the following link: https://nerdvana.ro/wro-fe/
@@ -625,10 +700,14 @@ To ensure the robot's ability to adapt to any course, we developed a randomizer 
 
 ## Copyright <a class="anchor" id="copyright"></a>
 
-Unless explicitly stated otherwise, all rights, including copyright, in the content of these files and images are owned or controlled for these purposes by Nerdvana Romania.
+```
+MIT License
 
-You may copy, download, store (in any medium), adapt, or modify the content of these Nerdvana Romania resources, provided that you properly attribute the work to Nerdvana Romania.
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
-For any other use of Nerdvana Romania's content, please get in touch with us at office@nerdvana.ro.
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
-© 2024 Nerdvana Romania. All rights reserved.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+© 2024 Nerdvana Romania
+```
