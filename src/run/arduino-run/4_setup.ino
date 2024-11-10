@@ -1,18 +1,14 @@
 String receivedMessage;
 
-uint32_t last_rotate = 0, time_elapsed = 0;
-int turns = 0, freq = 0;
-
 void blink_led(int pin, int duration) {
   digitalWrite(pin, HIGH);
-  delay(duration);
+  custom_delay(duration);
   digitalWrite(pin, LOW);
-  delay(duration);
+  custom_delay(duration);
 }
 
 void setup_led(int pin) {
   pinMode(pin, OUTPUT);
-  blink_led(pin, 500);
 }
 
 void setup_periferics() {
@@ -22,23 +18,26 @@ void setup_periferics() {
 }
 
 void comm_setup() {
+  Serial.begin(9600);
+  // while(!Serial);
+  blink_led(LED_BUILTIN, 500);
+
   Serial0.begin(19200);
+  while(!Serial0);
+  blink_led(LED_BUILTIN, 500);
   receivedMessage = "";
 }
 
 void setup_function() {
   // put your setup code here, to run once:
-  Serial.begin(2000000);
-
   setup_periferics();
-  comm_setup();
-  motor_driver_setup();
-  servo_setup();
-  gyro_setup(true);
 
-  // time_elapsed = millis();
-  // freq = 0;
-  last_rotate = millis() - 1000;
+  comm_setup();
+
+  motor_driver_setup(); // must be motor driver setup first and then servo setup
+  servo_setup();
+
+  gyro_setup(true);
 
   digitalWrite(LED_BUILTIN, HIGH);
   digitalWrite(DEBUG_LED, HIGH);

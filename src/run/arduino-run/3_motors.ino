@@ -1,8 +1,8 @@
 // -----Servo-----
 #define SERVO_PIN D2
-#define ANGLE_MIN 8 // 10
-#define ANGLE_MID 48 // 50
-#define ANGLE_MAX 88 // 90
+#define ANGLE_MIN 7 // 10
+#define ANGLE_MID 47 // 50
+#define ANGLE_MAX 87 // 90
 #define ANGLE_VARIANCE_THRESHOLD (ANGLE_MAX * 0.4)
 #define STEP 4
 Servo servo;
@@ -35,18 +35,18 @@ void servo_setup() {
   servo.attach(SERVO_PIN);
   for (int deg = servo.read() - 1; deg >= ANGLE_MIN; deg--)
     servo.write(deg);
-  delay(500);
+  custom_delay(500);
   // Serial.println("after ANGLE_MIN");
   for (int deg = servo.read() + 1; deg <= ANGLE_MID; deg++)
     servo.write(deg);
   // Serial.println("after ANGLE_MID");
   for (int deg = servo.read() + 1; deg <= ANGLE_MAX; deg++)
     servo.write(deg);
-  delay(500);
+  custom_delay(500);
   // Serial.println("after ANGLE_MAX");
   for (int deg = servo.read() - 1; deg >= ANGLE_MID; deg--)
     servo.write(deg);
-  delay(500);
+  custom_delay(500);
   // Serial.println("after ANGLE_MID");
   goal_deg = ANGLE_MID;
 }
@@ -76,16 +76,6 @@ void move_motor(double speed) {  // move the motor with a given speed in the [0,
   ledcWrite(DRIVER_PWM_CHANNEL, (int)speed);
 }
 
-void custom_delay(long long delay_time) {
-  long long start_time = millis();
-  while (millis() - start_time < delay_time) {
-    read_gyro(false);
-    while (Serial0.available() > 0) { // if we have some characters waiting
-      Serial0.read(); // flush the character
-    }
-  }
-}
-
 void motor_break(long long break_time) {
   move_motor(-3);
   custom_delay(break_time);
@@ -101,7 +91,6 @@ void move_servo(double angle) {  // move the servo to the angle checkpoint by se
 
 void update_servo() {
   int current_angle_servo = servo.read();
-  // print_angles();
   if (abs(current_angle_servo - goal_deg) >= ANGLE_VARIANCE_THRESHOLD) {
     servo.write(goal_deg);
   }
@@ -129,9 +118,7 @@ void move_until_angle(double speed, double gyro_offset) {
     move_servo(pid_error_gyro * sign);
     update_servo();
     move_motor(speed);
-    while (Serial0.available() > 0) { // if we have some characters waiting
-      Serial0.read(); // flush the character
-    }
+    flush_messages();
   }
 }
 
@@ -148,13 +135,11 @@ void move_cm_gyro(double dis, double speed, double gyro_offset) {
     move_servo(pid_error_gyro * sign);
     update_servo();
     move_motor(speed);
-    while (Serial0.available() > 0) { // if we have some characters waiting
-      Serial0.read(); // flush the character
-    }
+    flush_messages();
   }
 }
 
-void print_angles() {  // for debugging reasons
+void print_angles() {
   int current_angle = servo.read();
   Serial.print("goal: ");
   Serial.print(goal_deg);
