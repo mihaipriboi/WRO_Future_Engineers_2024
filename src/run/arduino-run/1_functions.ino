@@ -1,4 +1,4 @@
-double clamp(double val, double left, double right) {  // force the val into the [left, right] interval
+double clamp(double val, double left, double right) { // force the val into the [left, right] interval
   if (val > right)
     return right;
   if (val < left)
@@ -6,7 +6,7 @@ double clamp(double val, double left, double right) {  // force the val into the
   return val;
 }
 
-double map_double(double x, double in_min, double in_max, double out_min, double out_max) {  // translate the x value from the [in_min, in_max] interval to the [out_min, out_max] interval
+double map_double(double x, double in_min, double in_max, double out_min, double out_max) { // translate the x value from the [in_min, in_max] interval to the [out_min, out_max] interval
   const double run = in_max - in_min;
   if (run == 0)
     return out_min;
@@ -37,7 +37,7 @@ bool valid_command(String cmd) { // function that checks the validity of a comma
     if (cmd.length() != 1)
       return false;
   }
-  if (cmd[0] != 'r' || cmd[0] != 'g' || cmd[0] != 'R' || cmd[0] != 'G')
-    return false;
+  // if (cmd[0] != 'r' && cmd[0] != 'g' && cmd[0] != 'R' && cmd[0] != 'G')
+  //   return false;
   return true;
 }

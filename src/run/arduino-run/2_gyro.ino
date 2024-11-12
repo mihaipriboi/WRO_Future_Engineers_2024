@@ -19,7 +19,6 @@ double kd_gyro = 0.042;
 double pid_error_gyro, pid_last_error_gyro = 0;
 
 double gx, gy, gz;
-long last_gyro_read;
 long gyro_read_interval = 1;
 bool gyro_flag, accel_flag;
 

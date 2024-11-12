@@ -32,6 +32,8 @@ void motor_driver_setup() {
 }
 
 void servo_setup() {
+  // attach the servo to the right pin and move it to the minimum and maximum angles
+  // in the end, center the servo so that we start the program moving straight
   servo.attach(SERVO_PIN);
   for (int deg = servo.read() - 1; deg >= ANGLE_MIN; deg--)
     servo.write(deg);
@@ -51,7 +53,7 @@ void servo_setup() {
   goal_deg = ANGLE_MID;
 }
 
-void move_motor(double speed) {  // move the motor with a given speed in the [0, 100] interval
+void move_motor(double speed) {  // move the motor with a given speed in the [-100, 100] interval
   int dir = 1;
   if (speed < 0) {
     dir = -1;
@@ -61,40 +63,42 @@ void move_motor(double speed) {  // move the motor with a given speed in the [0,
     dir = 0;
   }
   speed = map_double(speed, 0, 100, 0, 1023);
-  if (dir == 1) {
+  if (dir == 1) { // move the motor forward
     digitalWrite(AIN1, HIGH);
     digitalWrite(AIN2, LOW);
   }
-  else if (dir == -1) {
+  else if (dir == -1) { // move it backwards
     digitalWrite(AIN1, LOW);
     digitalWrite(AIN2, HIGH);
   }
-  else {
+  else { // implement active break (not used since we don't know how reliable it is)
     digitalWrite(AIN1, LOW);
     digitalWrite(AIN2, LOW);
   }
-  ledcWrite(DRIVER_PWM_CHANNEL, (int)speed);
+  ledcWrite(DRIVER_PWM_CHANNEL, (int)speed); // write the speed using PWM
 }
 
-void motor_break(long long break_time) {
+void motor_break(long long break_time) { // stop the robot for a given time
   move_motor(-3);
   custom_delay(break_time);
 }
 
-double read_motor_cm() {  // getting the distance driven by the motor in cm
+double read_motor_cm() { // getting the distance driven by the motor in cm
   return GEAR_RATIO * WHEEL_DIAM * M_PI * (double)myEnc.read() / 12 / 10;
 }
 
-void move_servo(double angle) {  // move the servo to the angle checkpoint by setting the goal degrees to the angle value
+void move_servo(double angle) { // move the servo to the angle checkpoint by setting the goal degrees to the angle value
   goal_deg = map_double(angle, -1, 1, ANGLE_MIN, ANGLE_MAX);
 }
 
-void update_servo() {
+void update_servo() { // update the servo, making it closer to the goal angle by a small step
   int current_angle_servo = servo.read();
-  if (abs(current_angle_servo - goal_deg) >= ANGLE_VARIANCE_THRESHOLD) {
+  if (abs(current_angle_servo - goal_deg) >= ANGLE_VARIANCE_THRESHOLD) { // if we're too far off, directly write the new angle
     servo.write(goal_deg);
   }
   else {
+    // increment the angle with a small step in the right direction
+    // making sure we don't exceed our angle limitations
     if (current_angle_servo < goal_deg) {
       servo.write(min(current_angle_servo + STEP, ANGLE_MAX));
     }
@@ -104,13 +108,15 @@ void update_servo() {
   }
 }
 
+// makes the robot move until it reaches a certain gyro angle
 void move_until_angle(double speed, double gyro_offset) {
   int sign = 1;
-  if (speed < 0)
+  if (speed < 0) // if we're moving backwards, we need to steer in the opposite direction
     sign = -1;
   read_gyro(false);
   double err = gyro_offset - gx;
-  while (abs(err) >= 10) {
+  while (abs(err) >= 10) { // while the error is too big
+    // pid on the gyro so that we're moving towards the goal angle
     read_gyro(false);
     err = gyro_offset - gx;
     pid_error_gyro = (err) * kp_gyro + (pid_error_gyro - pid_last_error_gyro) * kd_gyro;
@@ -122,12 +128,14 @@ void move_until_angle(double speed, double gyro_offset) {
   }
 }
 
+// makes the robot move a certain distance at a certain gyro angle
 void move_cm_gyro(double dis, double speed, double gyro_offset) {
   double start_cm = read_motor_cm();
   int sign = 1;
-  if (speed < 0)
+  if (speed < 0) // if we're moving backwards, we need to steer in the opposite direction
     sign = -1;
-  while (abs(read_motor_cm() - start_cm) < dis) {
+  while (abs(read_motor_cm() - start_cm) < dis) { // while we haven't moved the requested distance
+    // pid on the gyro so that we're moving at the correct angle
     read_gyro(false);
     double err = gyro_offset - gx;
     pid_error_gyro = (err) * kp_gyro + (pid_error_gyro - pid_last_error_gyro) * kd_gyro;
@@ -139,7 +147,7 @@ void move_cm_gyro(double dis, double speed, double gyro_offset) {
   }
 }
 
-void print_angles() {
+void print_angles() { // print the goal angle and the current angle of the servo for debugging reasons
   int current_angle = servo.read();
   Serial.print("goal: ");
   Serial.print(goal_deg);

@@ -23,7 +23,7 @@ void comm_setup() {
   blink_led(LED_BUILTIN, 500);
 
   Serial0.begin(19200);
-  while(!Serial0);
+  while(!Serial0); // wait for the serial to properly initialize
   blink_led(LED_BUILTIN, 500);
   receivedMessage = "";
 }
@@ -39,6 +39,7 @@ void setup_function() {
 
   gyro_setup(true);
 
+  // turn on debugging leds so that we know the setup is complete
   digitalWrite(LED_BUILTIN, HIGH);
   digitalWrite(DEBUG_LED, HIGH);
 }

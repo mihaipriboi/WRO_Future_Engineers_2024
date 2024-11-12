@@ -17,19 +17,20 @@ bool is_running = false;
 uint32_t last_rotate = 0, time_elapsed = 0;
 
 void loop() {
-  int is_start_btn_on = digitalRead(BTN_PIN);
-  read_gyro(false);
-  if (!is_running && is_start_btn_on == LOW) {
-    is_running = true;
+  int is_start_btn_on = digitalRead(BTN_PIN); // wait for the button to be pressed
+  read_gyro(false); // flush the data
+  flush_messages();
+  if (!is_running && is_start_btn_on == LOW) { // if we press the button and the program isn't running
+    is_running = true; // start the program
     
     digitalWrite(LED_BUILTIN, LOW);
-    digitalWrite(DEBUG_LED, LOW);
+    digitalWrite(DEBUG_LED, LOW); // turn off the debugging leds
     
-    last_rotate = millis();
+    last_rotate = millis(); // initialize times
     // time_elapsed = millis();
     // freq = 0;
   }
-  if (is_running) {
+  if (is_running) { // if the program is running, execute one iteration of the loop function
     loop_function();
   }
 }

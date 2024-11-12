@@ -29,6 +29,7 @@
 * [Obstacle Management](#obstacle-management)
   * [Qualification Round](#quali-management)
   * [Final Round](#final-management)
+  * [Additional code](#additional-code)
 * [Robot Construction Guide](#robot-construction-guide)
   * [Step 0: Print the 3D parts](#3d-printing)
   * [Step 1: Assemble the steering system](#steering-system-assembly)
@@ -231,11 +232,12 @@ Given the fact that the Arduino has an ESP chip, the PWM signals have to be sent
 void motor_driver_setup() {
   ledcSetup(DRIVER_PWM_CHANNEL, PWM_FREQ, PWM_RES);
   ledcAttachPin(PWMA, DRIVER_PWM_CHANNEL);
+
   pinMode(AIN1, OUTPUT);
   pinMode(AIN2, OUTPUT);
 }
 
-void move_motor(double speed) {
+void move_motor(double speed) {  // move the motor with a given speed in the [-100, 100] interval
   int dir = 1;
   if (speed < 0) {
     dir = -1;
@@ -245,23 +247,24 @@ void move_motor(double speed) {
     dir = 0;
   }
   speed = map_double(speed, 0, 100, 0, 1023);
-  if (dir == 1) {
+  if (dir == 1) { // move the motor forward
     digitalWrite(AIN1, HIGH);
     digitalWrite(AIN2, LOW);
   }
-  else if (dir == -1) {
+  else if (dir == -1) { // move it backwards
     digitalWrite(AIN1, LOW);
     digitalWrite(AIN2, HIGH);
   }
-  else {
+  else { // implement active break (not used since we don't know how reliable it is)
     digitalWrite(AIN1, LOW);
     digitalWrite(AIN2, LOW);
   }
-  ledcWrite(DRIVER_PWM_CHANNEL, (int)speed);
+  ledcWrite(DRIVER_PWM_CHANNEL, (int)speed); // write the speed using PWM
 }
 
-void motor_break() {
-  move_motor(-5);
+void motor_break(long long break_time) { // stop the robot for a given time
+  move_motor(-3);
+  custom_delay(break_time);
 }
 ```
 
@@ -269,9 +272,11 @@ However, for the encoder, we required a specialized library to handle the more c
 
 The encoder operates with a straightforward function that we found easy to comprehend and program. In order to determine the distance in cm, we divided the returned value by 12, since the encoder measures 12 counts per revolution. Then we multiplied this with the gear ratio, wheel diameter and pi. After that we divied by 10 to convert to cm.
 
+Because of the way the ESP32 chip interacts with the components, in order for this library to properly work, we should select the pin numbering option as "by GPIO number", not as the default "by Arduino pin".
+
 ```ino
-double read_motor_cm(double wheel_diameter, double gear_ratio) {
-  return gear_ratio * wheel_diameter * M_PI * (double)myEnc.read() / 12 / 10;
+double read_motor_cm() {  // getting the distance driven by the motor in cm
+  return GEAR_RATIO * WHEEL_DIAM * M_PI * (double)myEnc.read() / 12 / 10;
 }
 ```
 
@@ -281,23 +286,24 @@ For controlling the servo motor, we utilize the _Servo.h_ library, which provide
 
 ```ino
 void servo_setup() {
+  // attach the servo to the right pin and move it to the minimum and maximum angles
+  // in the end, center the servo so that we start the program moving straight
   servo.attach(SERVO_PIN);
   for (int deg = servo.read() - 1; deg >= ANGLE_MIN; deg--)
     servo.write(deg);
-  delay(500);
-  Serial.println("after ANGLE_MIN");
+  custom_delay(500);
+  // Serial.println("after ANGLE_MIN");
   for (int deg = servo.read() + 1; deg <= ANGLE_MID; deg++)
     servo.write(deg);
-  delay(500);
-  Serial.println("after ANGLE_MID");
+  // Serial.println("after ANGLE_MID");
   for (int deg = servo.read() + 1; deg <= ANGLE_MAX; deg++)
     servo.write(deg);
-  delay(500);
-  Serial.println("after ANGLE_MAX");
+  custom_delay(500);
+  // Serial.println("after ANGLE_MAX");
   for (int deg = servo.read() - 1; deg >= ANGLE_MID; deg--)
     servo.write(deg);
-  delay(500);
-  Serial.println("after ANGLE_MID");
+  custom_delay(500);
+  // Serial.println("after ANGLE_MID");
   goal_deg = ANGLE_MID;
 }
 ```
@@ -309,16 +315,18 @@ The function _move_servo_ sets the goal angle to the given parameter angle. If t
 The function _update_servo_ takes a small step towards the goal angle as described above.
 
 ```ino
-void move_servo(double angle) {
+void move_servo(double angle) {  // move the servo to the angle checkpoint by setting the goal degrees to the angle value
   goal_deg = map_double(angle, -1, 1, ANGLE_MIN, ANGLE_MAX);
 }
 
-void update_servo() {
+void update_servo() { // update the servo, making it closer to the goal angle by a small step
   int current_angle_servo = servo.read();
-  if (abs(current_angle_servo - goal_deg) >= ANGLE_VARIANCE_THRESHOLD) {
+  if (abs(current_angle_servo - goal_deg) >= ANGLE_VARIANCE_THRESHOLD) { // if we're too far off, directly write the new angle
     servo.write(goal_deg);
   }
   else {
+    // increment the angle with a small step in the right direction
+    // making sure we don't exceed our angle limitations
     if (current_angle_servo < goal_deg) {
       servo.write(min(current_angle_servo + STEP, ANGLE_MAX));
     }
@@ -329,29 +337,40 @@ void update_servo() {
 }
 
 void loop() {
+  // other code
   update_servo();
 }
 ```
 
 ## Camera <a class="anchor" id="camera-code"></a>
 
-Now that we finished to implement the functions we need to make the robot move and steer, we have to make him see the walls and the cubes and move according to them. To communicate with the camera, we use the UART protocol.
+Now that we finished to implement the functions we need to make the robot move and steer, we have to make him see the lines that trigger the turns, the cubes and the parking walls and move accordingly. To communicate with the camera, we use the UART protocol. In order for this to work, we must link the RX0 pin on the arduino (the receiver pin) to the P4 pin on the camera (the transmitter pin) and the TX1 pin on the arduino (the transmitter pin) to the P5 pin on the camera (the receiver pin). In addition, the baud rates from the Serial0 object on the arduino and the uart object on the camera must match.
 
 Arduino code:
 ```ino
 void comm_setup() {
+  Serial.begin(9600);
+  // while(!Serial);
+  blink_led(LED_BUILTIN, 500);
+
   Serial0.begin(19200);
+  while(!Serial0); // wait for the serial to properly initialize
+  blink_led(LED_BUILTIN, 500);
   receivedMessage = "";
 }
 
 void loop() {
+  // execute pending commands
   while (Serial0.available() > 0) { // if we have some characters waiting
     char receivedChar = Serial0.read(); // we get the first character
     if (receivedChar == '\n') { // if it's the end of message marker
-      execute(receivedMessage); // execute the received command from the OpenMV camera
-      receivedMessage = ""; // Reset the received message
-    } else {
-      receivedMessage += receivedChar; // Append characters to the received message
+      if (CASE != PARK) { // if we want to execute commands
+        execute(receivedMessage); // execute the received command from the OpenMV camera
+      }
+      receivedMessage = ""; // reset the received message
+    }
+    else {
+      receivedMessage += receivedChar; // append characters to the received message
     }
   }
 }
@@ -359,45 +378,104 @@ void loop() {
 
 Camera code:
 ```py
-# UART 3, and baudrate.
+# setup UART connection to arduino
 uart = UART(3, 19200)
+# 3 - the uart config, meaning that we use pins P4 as the transmitter, P5 as the receiver
+# 19200 - baud rate aka frequency, must match the one set up on the arduino
 
-# if all the characters have been processed we send another message
-if uart.any() == 0:
-    uart.write(msg)
+# free the communication channel before sending a message
+def flush_characters():
+    while uart.any() != 0:
+        uart.read()
+
+flush_characters()
+uart.write(msg)
 ```
 
-Now for the camera logic, the color tracking is pretty simple: the camera can return blobs of pixels that fit into a certain LAB threshold representing a color. We can also restrain the blob detection to a rectangle of interest and apply pixel count and bounding rectangle area filters as well. Therefore, for quali we firstly scan the color of the first seen line. This will give us the direction of the run. Then, we constantly look out for black blobs that are over a certain area. Once we find one for a certain amount of time, we send the turn trigger to the Arduino via UART.
+In order to detect colors, we have to take pictures in which to search for colors. This is the sequence that sets up the camera sensor. Due to the limitations of the sensor this camera has, we couldn't manually adjust the white balance, gain, exposure time or access the registries.
+
+```py
+import sensor
+
+# initialize the sensor
+sensor.reset()
+sensor.set_pixformat(sensor.RGB565)
+sensor.set_framesize(sensor.QQVGA)
+#sensor.set_framerate(40)
+sensor.set_vflip(True)
+sensor.set_hmirror(True)
+
+# disable auto gain, white balance, and exposure
+sensor.set_auto_gain(False)  # must be turned off for color tracking
+sensor.set_auto_whitebal(False)  # must be turned off for color tracking
+sensor.set_auto_exposure(False, exposure_us=10000) # set constant exposure for the best visibility
+
+# skip some frames to let the camera adjust
+sensor.skip_frames(time=2000)
+```
+
+Now for the camera logic, the color tracking is pretty simple: the camera can return blobs of pixels that fit into a certain LAB threshold representing a color. We can also restrain the blob detection to a rectangle of interest and apply pixel count, bounding rectangle area and density filters as well. Therefore, for quali we firstly scan the color of the first seen line. This will give us the direction of the run. Then, we constantly look out for lines that are over a certain area. Once we find one, we send the turn trigger to the Arduino via UART.
+The color detection is the same for the cube and parking wall detection, therefore we'll explain only the code needed for quali.
 
 ```py
 while (True):
     clock.tick()
     img = sensor.snapshot()
 
-    wall_blobs = img.find_blobs(black_threshold, roi=wall_roi, pixels_threshold=wall_blob_size, area_threshold=wall_blob_size, merge=True)
+    # find the coloured blobs corresponding to the turn lines
     orange_blobs = img.find_blobs(orange_threshold, roi=lines_roi, pixels_threshold=line_blob_size, area_threshold=line_blob_size, merge=True)
     blue_blobs = img.find_blobs(blue_threshold, roi=lines_roi, pixels_threshold=line_blob_size, area_threshold=line_blob_size, merge=True)
 
-    if direction == 0:
-        if len(orange_blobs) > 0:
+    orange_blob_w = None
+    orange_blob_h = None
+    max_width = 0
+    max_height = 0
+    for blob in orange_blobs:
+        if blob.w() >= img.width() * 0.4: # if it meets the minimum width requirement
+            if blob.w() > max_width: # if it's the biggest blob yet
+                max_width = blob.w()
+                orange_blob_w = blob # biggest blob on the width
+        if blob.h() >= lines_roi[3] * 0.4: # if it meets the minimum height requirement
+            if blob.h() > max_height: # if it's the biggest blob yet
+                max_height = blob.h()
+                orange_blob_h = blob # biggest blob on the height
+    # if we have a blob meeting either the minimum width or height requirement we remember it
+    orange_blob = orange_blob_w
+    if not orange_blob:
+        orange_blob = orange_blob_h
+
+    blue_blob_w = None
+    blue_blob_h = None
+    max_width = 0
+    max_height = 0
+    for blob in blue_blobs:
+        if blob.w() >= img.width() * 0.4: # if it meets the minimum width requirement
+            if blob.w() > max_width: # if it's the biggest blob yet
+                max_width = blob.w()
+                blue_blob_w = blob # biggest blob on the width
+        if blob.h() >= lines_roi[3] * 0.4: # if it meets the minimum height requirement
+            if blob.h() > max_height: # if it's the biggest blob yet
+                max_height = blob.h()
+                blue_blob_h = blob # biggest blob on the height
+    # if we have a blob meeting either the minimum width or height requirement we remember it
+    blue_blob = blue_blob_w
+    if not blue_blob:
+        blue_blob = blue_blob_h
+
+    if direction == 0: # if we didn't set a turn direction yet
+        if orange_blob: # if the first line we saw was an orange one
             direction = 2
-        elif len(blue_blobs) > 0:
+        elif blue_blob: # if the first line we saw was a blue one
             direction = 1
 
-    msg = "0\n"
-    time_now = -1
-    avoid_cubes = True
-    for blob in wall_blobs:
-        if time.time() - last_time_wall > constant_height_time:
-            msg = str(direction) + "\n"
-        else:
-            time_now = time.time()
+    has_line = False
+    if orange_blob or blue_blob: # if we saw either coloured lines, we can make a turn
+        has_line = True
 
-    if time_now != -1:
-        last_time_wall = time_now
-
-    if uart.any() == 0:
-        uart.write(msg)
+    if has_line:
+        # if we must turn
+        flush_characters() # making sure i can send the turn trigger
+        uart.write(str(direction) + '\n')
 ```
 
 
@@ -411,7 +489,6 @@ void gyro_setup(bool debug) {
   status = accel.setOdr(Bmi088Accel::ODR_200HZ_BW_80HZ);
   status = accel.pinModeInt1(Bmi088Accel::PUSH_PULL,Bmi088Accel::ACTIVE_HIGH);
   status = accel.mapDrdyInt1(true);
-
 
   status = gyro.begin();
 
@@ -454,7 +531,7 @@ void gyro_setup(bool debug) {
     // drifts_z = gz / DRIFT_TEST_TIME;
 
     if(debug) Serial.print("Drift test done!\nx: ");
-    if(debug) Serial.print(drifts_x, 6);
+    if(debug) Serial.println(drifts_x, 6);
     // if(debug) Serial.print("   y: ");
     // if(debug) Serial.print(drifts_y, 6);
     // if(debug) Serial.print("   z: ");
@@ -486,7 +563,7 @@ void read_gyro(bool debug) {
 
     if(debug) {
       Serial.print("Gyro: gx: ");
-      Serial.print(gx);
+      Serial.println(gx);
       // Serial.print(" gy: ");
       // Serial.print(gy);
       // Serial.print(" gz: ");
@@ -506,26 +583,35 @@ For the qualifying round, we set up a basic switch-case system to guide our robo
 
 We use two main switch cases: *PID*, and *STOP*.
 
-In the *PID* case, the robot moves straight and turns. It uses a special tool (PID controller) with a gyro sensor to stay on a straight line. If it gets too close to the wall, it gets a trigger from the camera to make a turn by adding 90 degrees to the goal angle.
+In the *PID* case, the robot moves straight and turns. It uses a special tool (PID controller) with a gyro sensor to stay on a straight line. If it sees a corner line, it gets a trigger from the camera to make a turn by adding 90 degrees to the goal angle.
 
 ```ino
 case PID: {
-  move_motor(motor_speed);
-  double err = current_angle_gyro - gx + GYRO_OFFSET * DIRECTION;
-  if (abs(err) < 10 && millis() - last_rotate > 1500 && turns >= 12) {
-    CASE = STOP;
-  }
-  else if (abs(err) < 10 && millis() - last_rotate > 1500 && flag != 0) {
-    current_angle_gyro += turn_direction * 89.7;
-    turns++;
-    last_rotate = millis();
+  double err = current_angle_gyro - gx;
+  if (millis() - last_rotate > FIRST_STOP_DELAY && turns >= 12) { // if we did 3 runs of the round
+    if (!QUALI) {
+      CASE = STOP_BEFORE_PARKING; // we need to stop and search for the parking
+    }
+    else {
+      CASE = STOP; // stop, challenge over
+    }
   }
   else {
+    // classic pid on the gyro so that we can move straight
     pid_error_gyro = (err) * kp_gyro + (pid_error_gyro - pid_last_error_gyro) * kd_gyro;
     pid_last_error_gyro = pid_error_gyro;
     move_servo(pid_error_gyro);
   }
+  move_motor(MOTOR_SPEED);
   break;
+}
+case STOP: {
+  // we finished the challenge, stop the robot
+  move_until_angle(MOTOR_SPEED, current_angle_gyro);
+  move_cm_gyro(10, MOTOR_SPEED, current_angle_gyro);
+  is_running = false;
+  Serial.println("Stop case");
+  motor_break(100000);
 }
 ```
 
@@ -537,6 +623,7 @@ After we're in the cube's proximity, we send a trigger from the camera to the ar
 ```py
 img = sensor.snapshot()
 
+# find the coloured blobs corresponding to the cubes
 red_blobs = img.find_blobs(red_threshold, roi=cubes_roi, pixels_threshold=min_cube_size, area_threshold=min_cube_size, merge=True)
 green_blobs = img.find_blobs(green_threshold, roi=cubes_roi, pixels_threshold=min_cube_size, area_threshold=min_cube_size, merge=True)
 
@@ -544,70 +631,347 @@ msg = "0\n"
 max_area = 0
 color = 'none'
 saved_cube = None
-for blob in red_blobs:
-    if blob.density() >= prop_thr and blob.area() > max_area:
+for blob in red_blobs: # for every red blob
+    # if they're passing the height and density filters
+    # we're keeping the biggest one and its color
+    if blob.density() >= density_thr and blob.h() > min_cube_height and blob.area() > max_area:
         max_area = blob.area()
         saved_cube = blob
         color = 'red'
-for blob in green_blobs:
-    if blob.density() >= prop_thr and blob.area() > max_area:
+for blob in green_blobs: # for every green blob
+    # if they're passing the height and density filters
+    # we're keeping the biggest one and its color
+    if blob.density() >= density_thr and blob.h() > min_cube_height and blob.area() > max_area:
         max_area = blob.area()
         saved_cube = blob
         color = 'green'
 
-if saved_cube != None:
-    if saved_cube.pixels() >= max_cube_size:
-        if uart.any() == 0:
-            if color == 'red':
-                uart.write('R\n')
-            else:
-                uart.write('G\n')
-    else:
+if saved_cube != None: # if we saw a cube
+    # if the cube area is over a certain threshold
+    # it means we must avoid the cube as we are too close to it
+    if (color == 'red' and saved_cube.pixels() >= max_cube_size_red) or (color == 'green' and saved_cube.pixels() >= max_cube_size_green):
+        flush_characters() # making sure i can send the trigger
+        # send the right trigger
         if color == 'red':
-            err = saved_cube.cx() - img.width() / 2 + offset
-            steering = err * kp + (err - err_old) * kd
-            steering = -clamp(steering, -1, 1)
-            err_old = err
+            uart.write('R\n')
+        else:
+            uart.write('G\n')
+        if has_line: # maybe add centroid inclusion checker
+            # if we must also turn
+            while uart.any() != 0: # we make sure we can send the trigger
+                uart.read()
+            uart.write(str(direction) + '\n') # send the turn trigger
+    else: # if the cube isn't too big we must follow it
+        # calculate the angle using PID
+        err = saved_cube.cx() - img.width() / 2
+        steering = err * kp + (err - err_old) * kd
+        steering = -clamp(steering, -1, 1)
+        err_old = err
+        # craft the command
+        if color == 'red':
             msg = 'r' + str(steering) + '\n'
         else:
-            err = saved_cube.cx() - img.width() / 2 - offset
-            steering = err * kp + (err - err_old) * kd
-            steering = -clamp(steering, -1, 1)
-            err_old = err
             msg = 'g' + str(steering) + '\n'
-        if uart.any() == 0:
-            uart.write(msg)
+        flush_characters() # making sure i can send the message
+        uart.write(msg)
+        if has_line: # maybe add centroid inclusion checker
+            # if we must also turn
+            flush_characters() # making sure i can send the turn trigger
+            uart.write(str(direction) + '\n')
+elif has_line: # if we don't see any cubes
+    # if we must turn
+    flush_characters() # making sure i can send the turn trigger
+    uart.write(str(direction) + '\n')
 ```
 
-The arduino part is quite simple, consisting of the quali switch but with two extra cases: FOLLOW_CUBE and PASS_CUBE. In the FOLLOW_CUBE case we just write to the servo the steering angle calculated by the PID algorithm ran on the camera. The PASS_CUBE case consists of three substates: the first one in which the robot moves forward and steers away from the cube, in the second one the robot steers in the opposite direction to center itself again and the last one in which the robot uses a PID with the gyro to straighten itself out. After that, we go back to the default PID case that is used in the quali code. In addition, while we're in the PASS_CUBE case we do not need any data from the camera, so we just flush all of the received characters.
+The arduino part is quite simple, consisting of the quali switch but with two extra cases: FOLLOW_CUBE and AFTER_CUBE. In the FOLLOW_CUBE case we just write to the servo the steering angle calculated by the PID algorithm ran on the camera. After we get the proximity trigger from the camera, we have a custom function called ```pass_cube``` which steers us away from the cube and puts us in the AFTER_CUBE state. This case consists of two substates: in the first one the robot steers in the opposite direction to center itself again and the second one in which the robot uses a PID with the gyro to move an additional distance so that we're perfectly positioned to see the next cube. After that, we go back to the default PID case that is used in the quali code.
+
+```ino
+// hardcoded sequence that avoids a cube
+void pass_cube(int cube_last) {
+  read_gyro(false);
+  int start_angle = gx;
+  move_until_angle(MOTOR_SPEED, start_angle + cube_last * -AVOIDANCE_ANGLE);
+  move_cm_gyro(7, MOTOR_SPEED, start_angle + cube_last * -AVOIDANCE_ANGLE);
+  CASE = AFTER_CUBE;
+}
+```
 
 ```ino
 case FOLLOW_CUBE: {
-  move_servo(avoid_cube_angle);
-  move_motor(motor_speed);
-  break;
-}
-case PASS_CUBE: {
-  if (read_motor_cm() - start_avoid_dis1 <= FORWARD_DISTANCE1) {
-    move_servo(last_cube_color * -0.5);
-    move_motor(pass_speed);
-    start_avoid_dis2 = read_motor_cm();
-  }
-  else if (read_motor_cm() - start_avoid_dis2 <= FORWARD_DISTANCE2) {
-    move_servo(last_cube_color * 1);
-    move_motor(pass_speed);
-  }
-  else if (abs(current_angle_gyro - gx) < 1)  {
-    CASE = PID;
+  check_and_execute_turnaround(gx);
+  if (millis() - last_rotate > FIRST_STOP_DELAY && turns >= 12) { // if we did 3 runs of the obstacle round, we need to stop and search for the parking
+    CASE = STOP_BEFORE_PARKING;
   }
   else {
-    pid_error_gyro = (current_angle_gyro  - gx) * kp_gyro + (pid_error_gyro - pid_last_error_gyro) * kd_gyro;
-    pid_last_error_gyro = pid_error_gyro;
-
-    move_servo(pid_error_gyro);
-    move_motor(pass_speed);
+    // write to the servo the pid computed on the camera in order to follow the cube
+    move_servo(follow_cube_angle);
+    move_motor(MOTOR_SPEED);
   }
   break;
+}
+
+case AFTER_CUBE: {
+  check_and_execute_turnaround(gx);
+  if (millis() - last_rotate > FIRST_STOP_DELAY && turns >= 12) { // if we did 3 runs of the obstacle round, we need to stop and search for the parking
+    CASE = STOP_BEFORE_PARKING;
+  }
+  else {
+    double err = current_angle_gyro - gx + cube_last * CORRECTION_ANGLE;
+    if (abs(err) < 5) {
+      // after we avoid the cube, move forward a bit more so that we're positioned
+      // to see the next cube
+      move_cm_gyro(10, MOTOR_SPEED, current_angle_gyro + cube_last * CORRECTION_ANGLE);
+      CASE = PID;
+    }
+    else {
+      // classic pid on the gyro so that we can move in the opposite direction
+      // so that we can see the next cube
+      pid_error_gyro = (err) * kp_gyro + (pid_error_gyro - pid_last_error_gyro) * kd_gyro;
+      pid_last_error_gyro = pid_error_gyro;
+      move_servo(pid_error_gyro);
+    }
+  }
+  move_motor(MOTOR_SPEED);
+  break;
+}
+```
+
+The next challenge in this round consists in the final turnaround. If the last seen cube is red, we need to do a roundabout and complete the last lap in the opposite direction. The way we deal with this is a function that checks if we should turn around and executes it if necessary. This function is called in the ```PID```, ```FOLLOW_CUBE``` and ```AFTER_CUBE``` cases.
+
+```ino
+void check_and_execute_turnaround(double gx) {
+  // if we didn't do the turnaround yet
+  // and we did 2 runs of the map
+  // and the last seen cube is red
+  // and some time passed since the 8th turn
+  // (so that we can see the first cube in the starting sequence in case this sequence had 2 cubes and we spawned between them)
+  if (QUALI)
+    return;
+  if (!TURNED && turns == 8 && cube_last == 1 && millis() - last_rotate > TURNAROUND_DELAY) {
+    if ((current_angle_gyro - turn_direction * 90) - gx > 0) {
+      current_angle_gyro += turn_direction * 90;
+    }
+    else {
+      current_angle_gyro -= turn_direction * 270;
+    }
+    turn_direction *= -1;
+    TURNED = true;
+    CASE = PID;
+  }
+}
+```
+
+The final challenge in this round consists in parking the robot. The way we implement this is based on the quali. Basically we want to move as close to the outer walls as possible so that we're perfectly positioned for the parking and avoiding all the cubes. While moving around the map like this (in the ```FIND_PARKING``` case), we are constantly scanning for magenta blobs that represent the parking walls. When we detect them, we send a trigger from the camera to the arduino and then we have a hardcoded sequence that puts us between the walls, implemented in the ```PARK``` case.
+
+Camera code:
+
+```py
+# find the coloured blobs corresponding to the parking walls
+parking_blobs = img.find_blobs(parking_threshold, roi=parking_roi, pixels_threshold=parking_blob_size, area_threshold=parking_blob_size, merge=True)
+
+if parking_blobs: # maybe add centroid inclusion checker
+    # if we saw the parking walls
+    flush_characters() # making sure i can send the parking trigger
+    uart.write('P\n')
+```
+
+Arduino code:
+```ino
+case STOP_BEFORE_PARKING: {
+  // straighten ourselves, start searching for the parking
+  move_until_angle(MOTOR_SPEED, current_angle_gyro);
+  turns_parking = 0;
+  CASE = FIND_PARKING;
+  break;
+}
+
+case FIND_PARKING: {
+  // classic pid on the gyro so that we can move straight
+  double err = current_angle_gyro - gx;
+  pid_error_gyro = (err) * kp_gyro + (pid_error_gyro - pid_last_error_gyro) * kd_gyro;
+  pid_last_error_gyro = pid_error_gyro;
+  move_servo(pid_error_gyro);
+  move_motor(MOTOR_SPEED);
+  break;
+}
+
+case PARK: {
+  // hardcoded sequence of moves that positions us in the parking spot
+  move_until_angle(MOTOR_SPEED, current_angle_gyro + turn_direction * 55);
+  move_until_angle(MOTOR_SPEED, current_angle_gyro - turn_direction * 90);
+  CASE = STOP;
+  break;
+}
+
+case STOP: {
+  // we finished the challenge, stop the robot
+  move_until_angle(MOTOR_SPEED, current_angle_gyro);
+  move_cm_gyro(10, MOTOR_SPEED, current_angle_gyro);
+  is_running = false;
+  Serial.println("Stop case");
+  motor_break(100000);
+}
+```
+
+## Additional code <a class="anchor" id="additional-code"></a>
+
+In order to clean up the code, we designed some additional functions. Whenever we want to call locomotion functions or delay functions, functions that would break the continuity of the loop function, we must do two things to make sure everything keeps working: flush the characters sent by the camera (using the ```flush_messages``` function) and read the gyro data. That's why we implemented a custom delay function and our locomotion functions are a bit atypical.
+
+```ino
+void flush_messages() {
+  while (Serial0.available() > 0) { // if we have some characters waiting
+    Serial0.read(); // flush the character
+  }
+}
+
+void custom_delay(long long delay_time) { // delay function that flushes all of the data
+  long long start_time = millis();
+  while (millis() - start_time < delay_time) {
+    read_gyro(false);
+    flush_messages();
+  }
+}
+```
+
+Functions used for locomotion:
+```ino
+// makes the robot move until it reaches a certain gyro angle
+void move_until_angle(double speed, double gyro_offset) {
+  int sign = 1;
+  if (speed < 0) // if we're moving backwards, we need to steer in the opposite direction
+    sign = -1;
+  read_gyro(false);
+  double err = gyro_offset - gx;
+  while (abs(err) >= 10) { // while the error is too big
+    // pid on the gyro so that we're moving towards the goal angle
+    read_gyro(false);
+    err = gyro_offset - gx;
+    pid_error_gyro = (err) * kp_gyro + (pid_error_gyro - pid_last_error_gyro) * kd_gyro;
+    pid_last_error_gyro = pid_error_gyro;
+    move_servo(pid_error_gyro * sign);
+    update_servo();
+    move_motor(speed);
+    flush_messages();
+  }
+}
+
+// makes the robot move a certain distance at a certain gyro angle
+void move_cm_gyro(double dis, double speed, double gyro_offset) {
+  double start_cm = read_motor_cm();
+  int sign = 1;
+  if (speed < 0) // if we're moving backwards, we need to steer in the opposite direction
+    sign = -1;
+  while (abs(read_motor_cm() - start_cm) < dis) { // while we haven't moved the requested distance
+    // pid on the gyro so that we're moving at the correct angle
+    read_gyro(false);
+    double err = gyro_offset - gx;
+    pid_error_gyro = (err) * kp_gyro + (pid_error_gyro - pid_last_error_gyro) * kd_gyro;
+    pid_last_error_gyro = pid_error_gyro;
+    move_servo(pid_error_gyro * sign);
+    update_servo();
+    move_motor(speed);
+    flush_messages();
+  }
+}
+```
+
+Lastly, we receive multiple types of commands from the camera, from different triggers, to cube following and avoiding commands. All of these take various forms, therefore we need a function that parses every command and executes it. This is where the ```execute``` and ```valid_command``` functions come in handy. The ```execute``` function executes the command only if the ```valid_command``` function says it's valid.
+
+```ino
+bool valid_command(String cmd) { // function that checks the validity of a command received from the camera
+  if ('0' <= cmd[0] && cmd[0] <= '9') {
+    if (cmd[0] > '2' || cmd[0] == '0')
+      return false;
+    if (cmd.length() != 1)
+      return false;
+  }
+  // if (cmd[0] != 'r' && cmd[0] != 'g' && cmd[0] != 'R' && cmd[0] != 'G')
+  //   return false;
+  return true;
+}
+
+// function that parses a command and executes it
+void execute(String cmd) {
+  if (!valid_command(cmd))
+    return;
+
+  // the following sequence gets the number from the command (if available)
+  int pos = 0, sign = 1;
+  if (cmd[pos] == 'r' || cmd[pos] == 'g')
+    pos++;
+  // manually going over the signs since the .toDouble function wouldn't parse them on its own
+  if (cmd[pos] == '+')
+    sign = 1, pos++;
+  else if (cmd[pos] == '-')
+    sign = -1, pos++;
+  double val = cmd.substring(pos).toDouble();
+
+  if (!QUALI) { // if we're in the final round
+    if (CASE == FIND_PARKING && cmd[0] == 'P') { // if we're searching for the parking spot and we find it
+      CASE = PARK; // park the robot
+      return;
+    }
+
+    if (cmd[0] == 'P') // if we see the parking slot, but we didn't finish the obstacle round we ignore it
+      return;
+
+    if (CASE != FIND_PARKING) {
+      if (cmd[0] == 'R' || cmd[0] == 'G') { // if we're in the proximity of a cube
+        if (cmd[0] == 'R') { // we determine the direction in which we avoid the cube
+          cube_last = 1;
+        }
+        else {
+          cube_last = -1;
+        }
+        pass_cube(cube_last);
+        return;
+      }
+      if (cmd[0] == 'r' || cmd[0] == 'g') { // if we see a cube but we're not close enough to avoid it
+        follow_cube_angle = val * sign;
+        CASE = FOLLOW_CUBE;
+        return;
+      }
+    }
+  }
+  
+  int msg = (int)val;
+  if (msg) { // a turn was detected
+    if (turn_direction == 0) { // if we don't know the direction yet
+      if (msg == 1) { // blue line
+        turn_direction = 1;
+      }
+      else { // orange line
+        turn_direction = -1;
+      }
+    }
+    if (millis() - last_rotate > delay_walls) { // if we can make a turn
+      if (CASE == FIND_PARKING) { // if we're searching for the parking spot
+        // if we're at the first turn, we have to move more in order to position ourselves close to the outer walls
+        if (turns_parking == 0)
+          move_cm_gyro(CORNER_DISTANCE_PARKING_FIRST_TURN, MOTOR_SPEED, current_angle_gyro);
+        else
+          move_cm_gyro(CORNER_DISTANCE_PARKING, MOTOR_SPEED, current_angle_gyro);
+        turns_parking++;
+      }
+      else if (abs(current_angle_gyro - gx) < 10) { // if we're during the obstacle round or in the quali and we're straight
+        // position ourselves in order to not hit the walls
+        if (QUALI)
+          move_cm_gyro(CORNER_DISTANCE_QUALI, MOTOR_SPEED, current_angle_gyro);
+        else
+          move_cm_gyro(CORNER_DISTANCE_FINAL, MOTOR_SPEED, current_angle_gyro);
+      }
+      else if (CASE != FOLLOW_CUBE) { // if we're crooked after avoiding a cube we position ourselves for the turn
+        move_until_angle(MOTOR_SPEED, current_angle_gyro + turn_direction * 20);
+        move_cm_gyro(7, MOTOR_SPEED, current_angle_gyro);
+      }
+      current_angle_gyro += turn_direction * 90; // update the goal angle for the next sequence
+      turns++; // increase the number of turns made
+      delay_walls = 2500; // larger delay for every turn except the first one
+      // as we may have the starting position close to the first turn
+      last_rotate = millis(); // update the last time we turned
+    }
+  }
 }
 ```
 
