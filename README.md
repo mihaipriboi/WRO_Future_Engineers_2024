@@ -53,7 +53,9 @@
 ## The Team <a class="anchor" id="team"></a>
 
 ### Nicola Victor Teodor
-![Nicola Victor Teodor](./team-photos/nicola-victor-teodor.jpeg)
+<figure>
+  <img src="./team-photos/nicola-victor-teodor.jpeg" alt="Nicola Victor Teodor" width="100%">
+</figure>
 
 <b>Age:</b> 18
 
@@ -64,7 +66,9 @@
 ---
 
 ### Bălan Teodor Ovidiu
-![Bălan Teodor Ovidiu](./team-photos/balan-teodor-ovidiu.jpg)
+<figure>
+  <img src="./team-photos/balan-teodor-ovidiu.jpg" alt="Bălan Teodor Ovidiu" width="100%">
+</figure>
 
 <b>Age:</b> 19
 
@@ -75,7 +79,9 @@
 ---
 
 ### Priboi Luca Mihai
-![Priboi Luca Mihai](./team-photos/priboi-luca-mihai.jpg)
+<figure>
+  <img src="./team-photos/priboi-luca-mihai.jpg" alt="Priboi Luca Mihai" width="100%">
+</figure>
 
 <b>Age:</b> 19
 
@@ -86,8 +92,10 @@
 ---
 
 ### Tuțu Mihai Alexandru
-![Tuțu Mihai Alexandru](./team-photos/tutu-mihai-alexandru.jpg)
-Nerdvana Romania Founder
+<figure>
+  <img src="./team-photos/tutu-mihai-alexandru.jpg" alt="Tuțu Mihai Alexandru" width="100%">
+  <figcaption align="center">Nerdvana Romania Founder</figcaption>
+</figure>
 
 <b>Role:</b> Coach
 
@@ -98,7 +106,11 @@ Very social, I can easily blend in a team. Like to communicate a lot with others
 ---
 
 ### Priboi Maria Marcela
-![Priboi Maria Marcela](./team-photos/priboi-maria-marcela.jpg)
+<figure>
+  <img src="./team-photos/priboi-maria-marcela.jpg" alt="Priboi Maria Marcela" width="100%">
+  <figcaption align="center">Nerdvana Romania Founder</figcaption>
+</figure>
+
 Nerdvana Romania Founder
 
 <b>Role:</b> Manager
@@ -108,7 +120,9 @@ Nerdvana Romania Founder
 ---
 
 ### Team photo
-![Team](./team-photos/team-image.jpg)
+<figure>
+  <img src="./team-photos/team-image.jpg" alt="Team" width="100%">
+</figure>
 
 ## Photos of our robot MOOYA (Mechanized Optimization for Outstanding Yield and Adaptation) <a class="anchor" id="robot-image"></a>
 
