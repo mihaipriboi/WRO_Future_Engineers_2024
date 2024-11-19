@@ -1,9 +1,14 @@
 <center><h1> Nerdvana Cancer 2024 </center>
 
+![Banner](./other/readme-images/banner.png)
+
+[![Website](https://img.shields.io/badge/Website-Visit-brightgreen?style=for-the-badge&logo=web&logoColor=white)](https://nerdvana.ro)
+[![Facebook](https://img.shields.io/badge/Facebook-%231877F2.svg?style=for-the-badge&logo=Facebook&logoColor=white)](https://www.facebook.com/nerdvanaro/)
+[![Instagram](https://img.shields.io/badge/Instagram-%23E4405F.svg?style=for-the-badge&logo=Instagram&logoColor=white)](https://instagram.com/nerdvana_romania/)
+
 ## Table of Contents
-* [Photos](#team-image)
-  * [Team](#team-image)
-  * [Robot](#robot-image)
+* [The Team](#team)
+* [The Robot](#robot-image)
 * [Performance Video](#video)
 * [Mobility Management](#mobility-management)
   * [Powertrain](#powertrain-mechanical)
@@ -42,12 +47,70 @@
   * [3D Models](#3d-models-resources)
   * [Images](#images-resources)
 * [License](#copyright)
+
 ---
 
-### Team: Priboi Mihai, Nicola Victor, Bălan Teodor <a class="anchor" id="team-image"></a>
-  ![Team](./team-photos/team-image.png)
+## The Team <a class="anchor" id="team"></a>
 
-## Photos of our robot <b style="color: red">TBD</b> <a class="anchor" id="robot-image"></a>
+### Nicola Victor Teodor
+![Nicola Victor Teodor](./team-photos/nicola-victor-teodor.jpeg)
+
+<b>Age:</b> 18
+
+<b>High School:</b> National College of Informatics "Tudor Vianu", Bucharest
+
+<b>Description:</b> Hi! I’m Victor from Romania and I own the fact that I’m a huge nerd: from coding and robotics, to photography, cinema, music, and even f1.
+
+---
+
+### Bălan Teodor Ovidiu
+![Bălan Teodor Ovidiu](./team-photos/balan-teodor-ovidiu.jpg)
+
+<b>Age:</b> 19
+
+<b>University:</b> University of Bucharest
+
+<b>Description:</b> Hello there! My name is Teo and I'm excited to be part of this amazing team. I have a passion for programming and robotics, and I'm always eager to learn and explore new technologies. In my free time, you can find me playing sports or enjoying my favorite video games. I believe that with dedication and teamwork, we can achieve great things together. Let's make our mark in the world of robotics!
+
+---
+
+### Priboi Luca Mihai
+![Priboi Luca Mihai](./team-photos/priboi-luca-mihai.jpg)
+
+<b>Age:</b> 19
+
+<b>University:</b> Politehnica University of Bucharest
+
+<b>Description:</b> Hello! I am Mihai! I've been participating at WRO since 2015 and I am very excited to be part of the Nerdvana Romania team. My academic passions are programming, physics and robotics, but I also enjoy playing the piano 🎹, whatching movies 🎬 and Formula 1 🏎️🏁.
+
+---
+
+### Tuțu Mihai Alexandru
+![Tuțu Mihai Alexandru](./team-photos/tutu-mihai-alexandru.jpg)
+Nerdvana Romania Founder
+
+<b>Role:</b> Coach
+
+<b>Description:</b> Hard working young man, objective driven and ready for the long haul. I like challenges and I never back down. The harder, the better. I like being pushed over my limits just to prove myself I can do better.
+
+Very social, I can easily blend in a team. Like to communicate a lot with others and to coordinate with other teammates. I was led and I led teams to certain objectives. I believe the only way to get where you want is to never stop trying and to never give up until you reach your destination.
+
+---
+
+### Priboi Maria Marcela
+![Priboi Maria Marcela](./team-photos/priboi-maria-marcela.jpg)
+Nerdvana Romania Founder
+
+<b>Role:</b> Manager
+
+<b>Description:</b> I am a very ambitious person, I like to work hard and to be involved in many projects. I am a very organized person and I like to have everything planned. I am a very sociable person and I like to communicate with people. I am a very responsible person and I like to take care of everything that is happening around me. I am a very creative person and I like to come up with new ideas. I am a very determined person and I like to achieve my goals.
+
+---
+
+### Team photo
+![Team](./team-photos/team-image.jpg)
+
+## Photos of our robot MOOYA (Mechanized Optimization for Outstanding Yield and Adaptation) <a class="anchor" id="robot-image"></a>
 
 | <img src="./robot-photos/front.jpeg" width="90%" /> | <img src="./robot-photos/back.jpeg" width="85%" /> | 
 | :--: | :--: | 
