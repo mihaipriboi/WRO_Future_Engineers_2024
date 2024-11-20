@@ -56,9 +56,9 @@ This repository contains the documentation for the Nerdvana Cancer team's robot 
 ## The Team <a class="anchor" id="team"></a>
 
 ### Nicola Victor Teodor
-<figure align="center">
+<p align="center">
   <img src="./team-photos/nicola-victor-teodor.jpeg" alt="Nicola Victor Teodor" width="80%">
-</figure>
+</p>
 
 <b>Age:</b> 18
 
@@ -69,9 +69,9 @@ This repository contains the documentation for the Nerdvana Cancer team's robot 
 ---
 
 ### Bălan Teodor Ovidiu
-<figure align="center">
+<p align="center">
   <img src="./team-photos/balan-teodor-ovidiu.jpg" alt="Bălan Teodor Ovidiu" width="80%">
-</figure>
+</p>
 
 <b>Age:</b> 19
 
@@ -82,9 +82,9 @@ This repository contains the documentation for the Nerdvana Cancer team's robot 
 ---
 
 ### Priboi Luca Mihai
-<figure align="center">
+<p align="center">
   <img src="./team-photos/priboi-luca-mihai.jpg" alt="Priboi Luca Mihai" width="80%">
-</figure>
+</p>
 
 <b>Age:</b> 19
 
@@ -95,10 +95,10 @@ This repository contains the documentation for the Nerdvana Cancer team's robot 
 ---
 
 ### Tuțu Mihai Alexandru
-<figure align="center">
+<p align="center">
   <img src="./team-photos/tutu-mihai-alexandru.jpg" alt="Tuțu Mihai Alexandru" width="80%">
-  <figcaption align="center">Nerdvana Romania Founder</figcaption>
-</figure>
+  <p align="center">Nerdvana Romania Founder</p>
+</p>
 
 <b>Role:</b> Coach
 
@@ -109,10 +109,10 @@ Very social, I can easily blend in a team. Like to communicate a lot with others
 ---
 
 ### Priboi Maria Marcela
-<figure align="center">
+<p align="center">
   <img src="./team-photos/priboi-maria-marcela.jpg" alt="Priboi Maria Marcela" width="80%">
-  <figcaption align="center">Nerdvana Romania Founder</figcaption>
-</figure>
+  <p align="center">Nerdvana Romania Founder</p>
+</p>
 
 Nerdvana Romania Founder
 
@@ -123,9 +123,9 @@ Nerdvana Romania Founder
 ---
 
 ### Team photo
-<figure align="center">
+<p align="center">
   <img src="./team-photos/team-image.jpg" alt="Team" width="80%">
-</figure>
+</p>
 
 ## The Challenge <a class="anchor" id="challenge"></a>
 
@@ -173,10 +173,10 @@ To minimize friction and thereby reduce speed loss, driving axle was made from l
 
 <table>
   <tr>
-    <td style="width: 50%; text-align: left;">
+    <td width="50%" style="text-align: left;">
       <img src="./other/readme-images/drive-motor.jpg" alt="DC Gearmotor" width="100%">
     </td>
-    <td style="width: 50%; text-align: left; vertical-align: top;">
+    <td width="50%" style="text-align: left; vertical-align: top;">
       <h3>Specifications:</h3>
       <li>Voltage: 12V</li>
       <li>Gear Ratio: 1:50</li>
@@ -204,10 +204,10 @@ To secure the motor to the chassis, we designed a custom 3D-printed holder. The 
 
 <table>
   <tr>
-    <td style="width: 50%; text-align: left;">
+    <td width="50%" style="text-align: left;">
       <img src="./other/readme-images/motor-driver.png" alt="Motor driver" width="100%">
     </td>
-    <td style="width: 50%; text-align: left; vertical-align: top;">
+    <td width="50%" style="text-align: left; vertical-align: top;">
       <h3>Specifications:</h3>
       <li>Power supply voltage: VM = 15V max, VCC = 2.7--5.5V</li>
       <li>Output current: Iout = 1.2A (average) / 3.2A (peak)</li>
@@ -250,10 +250,10 @@ The steering system is composed of 2 symmetrical wheel holders, that are conecte
 
 <table>
   <tr>
-    <td style="width: 50%; text-align: left;">
+    <td width="50%" style="text-align: left;">
       <img src="./other/readme-images/mg90s.jpg" alt="Servo Motor" width="100%">
     </td>
-    <td style="width: 50%; text-align: left; vertical-align: top;">
+    <td width="50%" style="text-align: left; vertical-align: top;">
       <h3>Specifications:</h3>
       <li>Weight: 13.4g</li>
       <li>Stall torque: 2.2 kgf·cm (6V)</li>
@@ -289,10 +289,10 @@ The robot's power and sense management system is composed of several components,
 
 <table>
   <tr>
-    <td style="width: 50%; text-align: left;">
+    <td width="50%" style="text-align: left;">
       <img src="./other/readme-images/battery.jpg" alt="Li-Po Battery" width="100%">
     </td>
-    <td style="width: 50%; text-align: left; vertical-align: top;">
+    <td width="50%" style="text-align: left; vertical-align: top;">
       <h3>Specifications:</h3>
       <li>Capacity: 450mAh</li>
       <li>Voltage: 7.4V/2S</li>
@@ -313,10 +313,10 @@ The battery is mounted using a custom 3D-printed holder, which is secured to the
 
 <table>
   <tr>
-    <td style="width: 50%; text-align: left;">
+    <td width="50%" style="text-align: left;">
       <img src="./other/readme-images/arduino-nano-esp32.jpg" alt="Arduino Nano ESP32" width="100%">
     </td>
-    <td style="width: 50%; text-align: left; vertical-align: top;">
+    <td width="50%" style="text-align: left; vertical-align: top;">
       <h3>Specifications:</h3>
       <li>Microcontroller: ESP32</li>
       <li>Flash memory: 4MB</li>
@@ -340,10 +340,10 @@ The Arduino, mounted on a prototype board, is secured to the chassis with a 3D-p
 
 <table>
   <tr>
-    <td style="width: 50%; text-align: left;">
+    <td width="50%" style="text-align: left;">
       <img src="./other/readme-images/gyro.jpg" alt="IMU Sensor - BMI088" width="100%">
     </td>
-    <td style="width: 50%; text-align: left; vertical-align: top;">
+    <td width="50%" style="text-align: left; vertical-align: top;">
       <h3>Specifications:</h3>
       <li>Gyroscope range: ±2000°/s</li>
       <li>Accelerometer range: ±24g</li>
@@ -362,10 +362,10 @@ Where to buy the gyro sensor: https://www.seeedstudio.com/Grove-6-Axis-Accelerom
 
 <table>
   <tr>
-    <td style="width: 50%; text-align: left;">
+    <td width="50%" style="text-align: left;">
       <img src="./other/readme-images/openmv-cam-h7-r2.jpg" alt="OpenMV Cam H7 R2" width="100%">
     </td>
-    <td style="width: 50%; text-align: left; vertical-align: top;">
+    <td width="50%" style="text-align: left; vertical-align: top;">
       <h3>Specifications:</h3>
       <li>Microcontroller: STM32H7</li>
       <li>Flash memory: 32MB</li>
@@ -387,10 +387,10 @@ Where to buy the OpenMV Cam H7 R2: https://openmv.io/products/openmv-cam-h7-r2
 
 <table>
   <tr>
-    <td style="width: 50%; text-align: left;">
+    <td width="50%" style="text-align: left;">
       <img src="./other/readme-images/linear-voltage-regulator.jpg" alt="Voltage regulator" width="100%">
     </td>
-    <td style="width: 50%; text-align: left; vertical-align: top;">
+    <td width="50%" style="text-align: left; vertical-align: top;">
       <h3>Specifications:</h3>
       <li>Input voltage: 35V max</li>
       <li>Output voltage: 5V</li>
