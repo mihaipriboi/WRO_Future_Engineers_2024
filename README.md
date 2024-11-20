@@ -6,8 +6,11 @@
 [![Facebook](https://img.shields.io/badge/Facebook-%231877F2.svg?style=for-the-badge&logo=Facebook&logoColor=white)](https://www.facebook.com/nerdvanaro/)
 [![Instagram](https://img.shields.io/badge/Instagram-%23E4405F.svg?style=for-the-badge&logo=Instagram&logoColor=white)](https://instagram.com/nerdvana_romania/)
 
+This repository contains the documentation for the Nerdvana Cancer team's robot for the 2024 World Robot Olympiad Future Engineers competition. The robot, was designed and built by a team of three students.
+
 ## Table of Contents
 * [The Team](#team)
+* [The Challenge](#challenge)
 * [The Robot](#robot-image)
 * [Performance Video](#video)
 * [Mobility Management](#mobility-management)
@@ -53,7 +56,7 @@
 ## The Team <a class="anchor" id="team"></a>
 
 ### Nicola Victor Teodor
-<figure>
+<figure align="center">
   <img src="./team-photos/nicola-victor-teodor.jpeg" alt="Nicola Victor Teodor" width="80%">
 </figure>
 
@@ -66,7 +69,7 @@
 ---
 
 ### Bălan Teodor Ovidiu
-<figure>
+<figure align="center">
   <img src="./team-photos/balan-teodor-ovidiu.jpg" alt="Bălan Teodor Ovidiu" width="80%">
 </figure>
 
@@ -79,7 +82,7 @@
 ---
 
 ### Priboi Luca Mihai
-<figure>
+<figure align="center">
   <img src="./team-photos/priboi-luca-mihai.jpg" alt="Priboi Luca Mihai" width="80%">
 </figure>
 
@@ -92,7 +95,7 @@
 ---
 
 ### Tuțu Mihai Alexandru
-<figure>
+<figure align="center">
   <img src="./team-photos/tutu-mihai-alexandru.jpg" alt="Tuțu Mihai Alexandru" width="80%">
   <figcaption align="center">Nerdvana Romania Founder</figcaption>
 </figure>
@@ -106,7 +109,7 @@ Very social, I can easily blend in a team. Like to communicate a lot with others
 ---
 
 ### Priboi Maria Marcela
-<figure>
+<figure align="center">
   <img src="./team-photos/priboi-maria-marcela.jpg" alt="Priboi Maria Marcela" width="80%">
   <figcaption align="center">Nerdvana Romania Founder</figcaption>
 </figure>
@@ -120,9 +123,22 @@ Nerdvana Romania Founder
 ---
 
 ### Team photo
-<figure>
+<figure align="center">
   <img src="./team-photos/team-image.jpg" alt="Team" width="80%">
 </figure>
+
+## The Challenge <a class="anchor" id="challenge"></a>
+
+The **[WRO 2024 Future Engineers - Self-Driving Cars](https://wro-association.org/)** challenge invites teams to design, build, and program a robotic vehicle capable of driving autonomously on a racetrack that changes dynamically for each round. The competition includes two main tasks: completing laps while navigating randomized obstacles and successfully performing a precise parallel parking maneuver. Teams must integrate advanced robotics concepts such as computer vision, sensor fusion, and kinematics, focusing on innovation and reliability.
+
+This challenge emphasizes all aspects of the engineering process, including:
+- **Mobility Management:** Developing efficient vehicle movement mechanisms.
+- **Obstacle Handling:** Strategizing to detect and navigate traffic signs (red and green markers) within specified rules.
+- **Documentation:** Showcasing engineering progress, design decisions, and open-source collaboration through a public GitHub repository.
+
+Points are awarded based on performance in the challenge rounds, quality of the engineering documentation, and the ability to create an innovative and robust solution. The goal is to inspire STEM learning through real-world robotics applications, teamwork, and creative problem-solving.
+
+Learn more about the challenge [here](https://wro-association.org/wp-content/uploads/WRO-2024-Future-Engineers-Self-Driving-Cars-General-Rules.pdf).
 
 ## Photos of our robot MOOYA (Mechanized Optimization for Outstanding Yield and Adaptation) <a class="anchor" id="robot-image"></a>
 
@@ -143,6 +159,8 @@ Nerdvana Romania Founder
 # Mobility Management <a class="anchor" id="mobility-management"></a>
 <!-- ![Powertrain](./images/resources/powertrain.png "Powertrain") -->
 
+The robot's mobility is managed by a combination of components, including the powertrain, steering system, and chassis. These elements work together to ensure the robot's smooth and efficient movement.
+
 ## Powertrain <a class="anchor" id="powertrain-mechanical"></a>
 
 <!-- ![Powertrain - Bottom View](./images/resources/powertrain_bottom_text.png "Powertrain - Bottom View") -->
@@ -153,16 +171,24 @@ To minimize friction and thereby reduce speed loss, driving axle was made from l
 
 ### Motor <a class="anchor" id="motor-mechanical"></a>
 
-![Drive motor](./other/readme-images/drive-motor.jpg "Drive motor")
+<table>
+  <tr>
+    <td style="width: 50%; text-align: left;">
+      <img src="./other/readme-images/drive-motor.jpg" alt="DC Gearmotor" width="100%">
+    </td>
+    <td style="width: 50%; text-align: left; vertical-align: top;">
+      <h3>Specifications:</h3>
+      <li>Voltage: 12V</li>
+      <li>Gear Ratio: 1:50</li>
+      <li>Speed: 650 ± 31% rpm</li>
+      <li>Torque: 0.67 ± kg·cm</li>
+      <li>Weight: 9.5g</li>
+      </li>
+    </td>
+  </tr>
+</table>
 
 Following an evaluation of different motors, we settled on a micro DC gear motor on which we attached a magnetic encoder. This motor was selected for its lightweight and compact design, which stands out among others with comparable output. Additionally, the magnetic encoder offers greater precision than its optical counterpart. We secured the motor to the chassis using a custom 3D-printed holder.
-
-**Specifications:**
-- Voltage: 12V
-- Gear Ratio: 1:50
-- Speed: 650 ± 31% rpm
-- Torque: 0.67 ± kg·cm
-- Weight: 9.5g
 
 Where to buy the motor: https://www.pololu.com/product/3039
 
@@ -175,7 +201,22 @@ To secure the motor to the chassis, we designed a custom 3D-printed holder. The 
 ![Micro motor holder (half) - 3D Model](./other/readme-images/motor_mount_v3_drawing.png "Micro motor holder (half) 3D piece")
 
 ### Motor Driver <a class="anchor" id="motor-driver-mechanical"></a>
-![Motor driver](./other/readme-images/motor-driver.png "Motor driver")
+
+<table>
+  <tr>
+    <td style="width: 50%; text-align: left;">
+      <img src="./other/readme-images/motor-driver.png" alt="Motor driver" width="100%">
+    </td>
+    <td style="width: 50%; text-align: left; vertical-align: top;">
+      <h3>Specifications:</h3>
+      <li>Power supply voltage: VM = 15V max, VCC = 2.7--5.5V</li>
+      <li>Output current: Iout = 1.2A (average) / 3.2A (peak)</li>
+      <li>Standby control to save power</li>
+      <li>CW/CCW/short-brake/stop motor control modes</li>
+      <li>Built-in thermal shutdown circuit and low-voltage detecting circuit</li>
+    </td>
+  </tr>
+</table>
 
 To control the speed of the drive motor, we utilized a SparkFun Dual TB6612FNG motor driver.
 
@@ -206,15 +247,23 @@ The steering system is composed of 2 symmetrical wheel holders, that are conecte
 ![Servo Mount](./other/readme-images/servo_mount_v8_drawing.png "Servo Mount")
 
 ### Servo Motor <a class="anchor" id="servo-motor"></a>
-![MG90S Servo](./other/readme-images/mg90s.jpg "MG90S Servo")
+
+<table>
+  <tr>
+    <td style="width: 50%; text-align: left;">
+      <img src="./other/readme-images/mg90s.jpg" alt="Servo Motor" width="100%">
+    </td>
+    <td style="width: 50%; text-align: left; vertical-align: top;">
+      <h3>Specifications:</h3>
+      <li>Weight: 13.4g</li>
+      <li>Stall torque: 2.2 kgf·cm (6V)</li>
+      <li>Operating speed: 0.08 s/60 degree (6V)</li>
+      <li>Rotation angle: 120 degree</li>
+    </td>
+  </tr>
+</table>
 
 For steering, we selected the MG90S servo motor, favoring it for its high torque and swift response.
-
-**Specifications:**
-- Weight: 13.4g
-- Stall torque: 2.2 kgf·cm (6V)
-- Operating speed: 0.08 s/60 degree (6V)
-- Rotation angle: 120 degree
 
 Where to buy the servo motor: https://cleste.ro/motor-servo-mg90s-180g.html
 
@@ -234,8 +283,25 @@ The motor support is a separate piece that holds the motor and the gyroscope. It
 
 # Power and Sense Management <a class="anchor" id="power-and-sense-management"></a>
 
+The robot's power and sense management system is composed of several components, including a Li-Po battery, an Arduino Nano ESP32, an IMU sensor, and an OpenMV Cam H7 R2. These components work together to provide the robot with the necessary power and sensory input to navigate its environment effectively.
+
 ### Li-Po Battery <a class="anchor" id="li-po-battery"></a>
-![Li-Po Battery](./other/readme-images/battery.jpg "Li-Po Battery")
+
+<table>
+  <tr>
+    <td style="width: 50%; text-align: left;">
+      <img src="./other/readme-images/battery.jpg" alt="Li-Po Battery" width="100%">
+    </td>
+    <td style="width: 50%; text-align: left; vertical-align: top;">
+      <h3>Specifications:</h3>
+      <li>Capacity: 450mAh</li>
+      <li>Voltage: 7.4V/2S</li>
+      <li>Discharge rate: 30C</li>
+      <li>Weight: 33 g</li>
+      <li>Size: 56.5*31*9mm</li>
+    </td>
+  </tr>
+</table>
 
 Where to buy the battery: https://hpi-racing.ro/li-po-2s-74v/acumulator-lipo-gens-ace-g-tech-soaring-450mah-74v-30c-2s1p-cu-jst-syp.html
 
@@ -244,7 +310,23 @@ The battery is mounted using a custom 3D-printed holder, which is secured to the
 <!-- ![Battery Mount - 3D Model](./images/resources/BatteryMount.jpg "Battery Mount - 3D Model") -->
 
 ### Arduino Nano ESP32 <a class="anchor" id="arduino-nano-esp32"></a>
-![Arduino Nano ESP32](./other/readme-images/arduino-nano-esp32.jpg " Arduino Nano ESP32")
+
+<table>
+  <tr>
+    <td style="width: 50%; text-align: left;">
+      <img src="./other/readme-images/arduino-nano-esp32.jpg" alt="Arduino Nano ESP32" width="100%">
+    </td>
+    <td style="width: 50%; text-align: left; vertical-align: top;">
+      <h3>Specifications:</h3>
+      <li>Microcontroller: ESP32</li>
+      <li>Flash memory: 4MB</li>
+      <li>SRAM: 520KB</li>
+      <li>Frequency: 240MHz</li>
+      <li>Pins: 22</li>
+      <li>Input voltage: 5V</li>
+    </td>
+  </tr>
+</table>
 
 At previous competitions, we used many microcontrollers to manage the robot's various components. This year, we opted for the Arduino Nano ESP32, which combines the functionalities of an Arduino Nano and an ESP32. This microcontroller is capable of handling all of the robot's sensors and actuators, providing a more streamlined and efficient solution.
 
@@ -255,18 +337,45 @@ The Arduino, mounted on a prototype board, is secured to the chassis with a 3D-p
 ![PCB Mount](./other/readme-images/pcb_plaque_v5_drawing.png "PCB Mount")
 
 ### IMU <a class="anchor" id="imu-sensor"></a>
-![IMU Sensor - BMI088](./other/readme-images/gyro.jpg "IMU Sensor - BMI088")
+
+<table>
+  <tr>
+    <td style="width: 50%; text-align: left;">
+      <img src="./other/readme-images/gyro.jpg" alt="IMU Sensor - BMI088" width="100%">
+    </td>
+    <td style="width: 50%; text-align: left; vertical-align: top;">
+      <h3>Specifications:</h3>
+      <li>Gyroscope range: ±2000°/s</li>
+      <li>Accelerometer range: ±24g</li>
+      <li>Interface: I2C</li>
+      <li>Supply voltage: 1.71V to 3.6V</li>
+      <li>Current consumption: 0.9mA</li>
+    </td>
+  </tr>
+</table>
 
 One importat aspect that helps the roboy navigate is the inertial measurement unit (IMU). This sensor is based on BOSCH BMI088, which is a high-performance IMU with high vibration suppression. While the IMU measure the angular velocity and the acceleration of the robot, we only use the angular velocity to calculate the angle of the robot. The IMU is wired to the SDA and SCL pins on the arduino.
-
-**Specifications:**
-- Gyroscope range: ±2000°/s
-- Accelerometer range: ±24g
 
 Where to buy the gyro sensor: https://www.seeedstudio.com/Grove-6-Axis-Accelerometer-Gyroscope-BMI088.html
 
 ### OpenMV Cam H7 R2 <a class="anchor" id="openmv-cam-h7-r2"></a>
-![OpenMV Cam H7 R2](./other/readme-images/openmv-cam-h7-r2.jpg "OpenMV Cam H7 R2")
+
+<table>
+  <tr>
+    <td style="width: 50%; text-align: left;">
+      <img src="./other/readme-images/openmv-cam-h7-r2.jpg" alt="OpenMV Cam H7 R2" width="100%">
+    </td>
+    <td style="width: 50%; text-align: left; vertical-align: top;">
+      <h3>Specifications:</h3>
+      <li>Microcontroller: STM32H7</li>
+      <li>Flash memory: 32MB</li>
+      <li>RAM: 512KB</li>
+      <li>Frequency: 480MHz</li>
+      <li>Resolution: 640x480</li>
+      <li>Frame rate: 60fps</li>
+    </td>
+  </tr>
+</table>
 
 The OpenMV Cam H7 R2 is a high-performance camera capable of color tracking. The best feature of this camera compared to other options (like the Pixy cam) is that is has a built-in microcontroller that can process the images and send the results to the Arduino. This way, the Arduino can focus on the robot's movement and the camera can focus on the image processing.
 
@@ -275,7 +384,22 @@ Together with the Arduino Nano ESP32, the camera delivers readings at approximat
 Where to buy the OpenMV Cam H7 R2: https://openmv.io/products/openmv-cam-h7-r2
 
 ### Voltage regulator <a class="anchor" id="voltage-regulator"></a>
-![Voltage regulator (L7805CV)](./other/readme-images/linear-voltage-regulator.jpg "Voltage regulator (L7805CV)")
+
+<table>
+  <tr>
+    <td style="width: 50%; text-align: left;">
+      <img src="./other/readme-images/linear-voltage-regulator.jpg" alt="Voltage regulator" width="100%">
+    </td>
+    <td style="width: 50%; text-align: left; vertical-align: top;">
+      <h3>Specifications:</h3>
+      <li>Input voltage: 35V max</li>
+      <li>Output voltage: 5V</li>
+      <li>Output current: 1.5A</li>
+      <li>Thermal shutdown circuit</li>
+      <li>Short-circuit protection</li>
+    </td>
+  </tr>
+</table>
 
 To provide the Arduino Nano ESP32 with the required 5V, we needed to decrease the output from the 7.4V battery, which can reach up to 8.4V when fully charged. We employed a linear voltage regulator, the L7805CV, capable of converting input voltages below 35V down to a steady 5V.
 
