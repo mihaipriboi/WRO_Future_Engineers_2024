@@ -45,6 +45,12 @@ This repository contains the documentation for the Nerdvana Cancer team's robot 
   * [Step 3: Attach the electronics](#electronics-attachment)
   * [Step 4: Attach the wheels](#wheel-attachment)
   * [Step 5: Final touches](#final-touches)
+  * [Step 6: Upload the code](#code-upload)
+* [Cost Report](#cost-report)
+  * [3D Printing Costs](#3d-printing-costs)
+  * [Other Parts Tested](#other-parts-tested)
+  * [Tools and Equipment](#tools-and-equipment)
+  * [Summary of Costs](#summary-of-costs)
 * [Randomizer](#randomizer)
 * [Resources](#resources)
   * [3D Models](#3d-models-resources)
@@ -169,6 +175,13 @@ The robot's mobility is managed by a combination of components, including the po
 
 To minimize friction and thereby reduce speed loss, driving axle was made from lego pieces. We conected the motor to the driving axle using a custom 3D-printed adapter. The driving axle has a rear wheel lego differential, which allows the robot to turn smoothly. As the axle was already lego, we used lego wheels.
 
+<br>
+
+**Potential Improvements**:
+- Upgrade to a stronger or more precise differential for smoother turning.
+- Test alternative materials for the Lego driving axle to reduce weight and increase durability.
+- Replace the 3D-printed adapter with a metal one to improve robustness and reliability.
+
 ### Motor <a class="anchor" id="motor-mechanical"></a>
 
 <table>
@@ -200,6 +213,13 @@ To secure the motor to the chassis, we designed a custom 3D-printed holder. The 
 
 ![Micro motor holder (half) - 3D Model](./other/readme-images/motor_mount_v3_drawing.png "Micro motor holder (half) 3D piece")
 
+<br>
+
+**Potential Improvements**:
+- Consider upgrading to a brushless motor for higher efficiency and better thermal management.
+- Implement a more robust motor holder to prevent vibrations and ensure stability.
+- Explore alternative motor designs to enhance performance and reduce weight.
+
 ### Motor Driver <a class="anchor" id="motor-driver-mechanical"></a>
 
 <table>
@@ -224,9 +244,11 @@ Where to buy the motor driver: https://www.sparkfun.com/products/14450
 
 <br>
 
-**Potential Improvements:**
-
-The current motor driver, which has the capacity for two motors but is only using one, can be replaced with a custom-made PCB. This modification aims to reduce the robot's overall weight and size, thereby enhancing its efficiency and performance.
+**Potential Improvements**:
+- Replace the motor driver with a custom PCB to reduce weight and improve space utilization.
+- Add active cooling or heat sinks for enhanced thermal performance during extended use.
+- Explore higher-current motor drivers to accommodate potential motor upgrades.
+- Implement a more robust power management system to ensure reliable operation.
 
 ## Steering <a class="anchor" id="steering-mechanical"></a>
 
@@ -245,6 +267,14 @@ The steering system is composed of 2 symmetrical wheel holders, that are conecte
 ![Steering Hub](./other/readme-images/steering_hub_v5_drawing.png "Steering Hub")
 
 ![Servo Mount](./other/readme-images/servo_mount_v8_drawing.png "Servo Mount")
+
+<br>
+
+**Potential Improvements**:
+- Make the steering angle wider to improve the robot's turning radius.
+- Implement Ackermann steering geometry for more precise and efficient turning.
+- Use ball-bearing joints in the linkage to reduce friction and increase durability.
+- Replace the 3D-printed components with lightweight aluminum for greater strength.
 
 ### Servo Motor <a class="anchor" id="servo-motor"></a>
 
@@ -267,6 +297,12 @@ For steering, we selected the MG90S servo motor, favoring it for its high torque
 
 Where to buy the servo motor: https://cleste.ro/motor-servo-mg90s-180g.html
 
+<br>
+
+**Potential Improvements**:
+- Test servos with a wider rotation angle to improve steering flexibility.
+- Integrate position feedback into the servo for real-time adjustment and enhanced precision.
+
 ## Chassis <a class="anchor" id="chassis-mechanical"></a>
 
 Our previous attempts at designing a robot for the Future Engineers category were bulky and heavy, mostly lego based. This year, we aimed to create a more compact and lightweight robot. We achieved this by using a almost entirely 3D-printed chassis. Because of this, the fact that we tried to use as few components as possible, the robot is aproximately 50% lighter than last year's robot, while also being more compact.
@@ -280,6 +316,16 @@ The chassis holds basically all of the components. Only the gearmotor and the gy
 The motor support is a separate piece that holds the motor and the gyroscope. It is attached to the chassis using snapping joints.
 
 ![Motor Support](./other/readme-images/motor_support_v7_drawing.png "Motor Support")
+
+<br>
+
+**Potential Improvements**:
+- Add vibration-damping materials to minimize disturbances during operation.
+- Test modular chassis designs for quicker assembly and maintenance.
+- Implement a more aerodynamic shape to reduce drag and improve speed.
+- Integrate a suspension system to enhance stability and shock absorption.
+- Explore alternative materials for the chassis to improve durability and performance.
+- Add a protective cover to shield the components from dust and debris.
 
 # Power and Sense Management <a class="anchor" id="power-and-sense-management"></a>
 
@@ -306,6 +352,14 @@ The robot's power and sense management system is composed of several components,
 Where to buy the battery: https://hpi-racing.ro/li-po-2s-74v/acumulator-lipo-gens-ace-g-tech-soaring-450mah-74v-30c-2s1p-cu-jst-syp.html
 
 The battery is mounted using a custom 3D-printed holder, which is secured to the chassis.
+
+<br>
+
+**Potential Improvements**:
+- Consider using a higher-capacity battery to extend runtime without increasing weight significantly.
+- Add a battery management system (BMS) for better charging and discharging safety.
+- Use quick-release connectors for easier battery replacement during competition.
+- Implement a battery level indicator to monitor power consumption and remaining charge.
 
 <!-- ![Battery Mount - 3D Model](./images/resources/BatteryMount.jpg "Battery Mount - 3D Model") -->
 
@@ -336,6 +390,14 @@ The Arduino, mounted on a prototype board, is secured to the chassis with a 3D-p
 
 ![PCB Mount](./other/readme-images/pcb_plaque_v5_drawing.png "PCB Mount")
 
+<br>
+
+**Potential Improvements**:
+- Design a custom PCB to integrate the Arduino Nano ESP32 with other components for a cleaner setup.
+- Test alternative microcontrollers with additional processing power or I/O pins for future scalability.
+- Optimize the mounting mechanism to allow easier access for debugging and repairs.
+- Implement a power management system to ensure stable voltage supply and prevent damage to the microcontroller.
+
 ### IMU <a class="anchor" id="imu-sensor"></a>
 
 <table>
@@ -357,6 +419,13 @@ The Arduino, mounted on a prototype board, is secured to the chassis with a 3D-p
 One importat aspect that helps the roboy navigate is the inertial measurement unit (IMU). This sensor is based on BOSCH BMI088, which is a high-performance IMU with high vibration suppression. While the IMU measure the angular velocity and the acceleration of the robot, we only use the angular velocity to calculate the angle of the robot. The IMU is wired to the SDA and SCL pins on the arduino.
 
 Where to buy the gyro sensor: https://www.seeedstudio.com/Grove-6-Axis-Accelerometer-Gyroscope-BMI088.html
+
+<br>
+
+**Potential Improvements**:
+- Explore alternative IMU sensors with higher accuracy and better vibration resistance.
+- Implement sensor fusion with additional sensors (e.g., magnetometer) for enhanced navigation.
+- Test calibration procedures to minimize drift over longer runs.
 
 ### OpenMV Cam H7 R2 <a class="anchor" id="openmv-cam-h7-r2"></a>
 
@@ -383,6 +452,20 @@ Together with the Arduino Nano ESP32, the camera delivers readings at approximat
 
 Where to buy the OpenMV Cam H7 R2: https://openmv.io/products/openmv-cam-h7-r2
 
+<br>
+
+**Potential Improvements**:
+- Upgrade to a camera with higher resolution for better object detection and tracking.
+- Test alternative lighting solutions to improve visibility in various conditions.
+- Implement advanced image processing algorithms to enhance detection accuracy.
+- Integrate a camera calibration system to ensure consistent performance across different environments.
+To make the colors easier to calibrate, you can implement the following steps:
+- Use a color calibration chart: Create a chart with different color patches that cover a wide range of hues, saturations, and brightness levels. Capture images of the chart under different lighting conditions and use these images to calibrate the color detection algorithm.
+- Implement automatic white balance: Use algorithms to automatically adjust the white balance of the camera based on the captured image. This helps in removing any color cast caused by the lighting conditions and ensures accurate color detection.
+- Use color correction algorithms: Apply color correction algorithms to compensate for any variations in lighting conditions. These algorithms can adjust the color values of the captured image to match a reference color space, making the colors more consistent and easier to calibrate.
+- Provide user-adjustable parameters: Allow users to manually adjust color thresholds or ranges to fine-tune the color detection. This can be done through a user interface or by providing configuration files that can be modified.
+- Implement real-time feedback: Display the detected colors in real-time to the user, along with the calibrated values. This allows users to visually verify the accuracy of the color detection and make adjustments if necessary.
+
 ### Voltage regulator <a class="anchor" id="voltage-regulator"></a>
 
 <table>
@@ -405,6 +488,15 @@ To provide the Arduino Nano ESP32 with the required 5V, we needed to decrease th
 
 Where to buy the 5V voltage regulator: https://ro.mouser.com/ProductDetail/STMicroelectronics/L7805CV?qs=9NrABl3fj%2FqplZAHiYUxWg%3D%3D
 
+<br>
+
+### Voltage Regulator
+
+**Potential Improvements**:
+- Replace the linear voltage regulator with a switching regulator for better efficiency.
+- Add heat sinks to the regulator for improved thermal management.
+- Design a compact custom regulator circuit to save space.
+
 ### PCB design <a class="anchor" id="pcb"></a>
 
 The PCB was made on a prototype board. The board has a voltage regulator, the Arduino Nano ESP32, the motor driver, and connectors for the motor, the servo motor, the IMU, and the camera. The board is powered by the LiPo battery.
@@ -413,6 +505,12 @@ The PCB was made on a prototype board. The board has a voltage regulator, the Ar
 | :--: | :--: | :--: |
 | <img src="./other/readme-images/pcb_1.jpg" alt="PCB connections" height="400"> | <img src="./other/readme-images/pcb_2.jpg" alt="PCB w/ regulator" height="400"> | <img src="./other/readme-images/pcb_3.jpg" alt="PCB complete" height="400"> |
 
+<br>
+
+**Potential Improvements**:
+- Transition from prototype boards to fully custom PCBs for better durability and compactness.
+- Include dedicated connectors for easier and faster assembly.
+- Integrate debugging points on the PCB to simplify troubleshooting.
 
 ### Circuit diagram <a class="anchor" id="circuit-diagram"></a>
 ![Circuit diagram](./electrical-diagram/circuit.png "Circuit diagram")
@@ -1240,6 +1338,101 @@ lugen the `chassis` using the peg joints.
 ## Step 5: Final touches <a class="anchor" id="final-touches"></a>
 
 1. Place a *100g* weight on the back of the robot and one on the `servo mount` to enhance stability and increase grip. The weights should stay in place, but you can stabilize them with some duct tape.
+
+## Step 6: Upload the code <a class="anchor" id="code-upload"></a>
+
+1. Connect the `Arduino` to your computer using a USB cable.
+
+2. Open the `Arduino IDE` and install the ESP32 board manager.
+
+3. Upload the code to the `Arduino`.
+
+4. Connect the `OpenMV Cam H7` to the your computer using a USB cable.
+
+5. Open the `OpenMV IDE` and upload the code to the `OpenMV Cam H7`.
+
+<br>
+
+# Cost Report <a class="anchor" id="cost-report"></a>
+
+## Components <a class="anchor" id="components-cost"></a>
+
+| Component                                   | Quantity | Cost per Unit (€) | Total (€) |
+|---------------------------------------------|----------|--------------------|-----------|
+| 50:1 Micro Metal Gearmotor HPCB 12V         | 1        | 21.00             | 21.00     |
+| SparkFun Motor Driver - Dual TB6612FNG      | 1        | 13.00             | 13.00     |
+| Motor Servo MG90S                           | 1        | 4.00              | 4.00      |
+| LiPo Battery (450mAh, 7.4V, 30C)            | 1        | 9.00              | 9.00      |
+| Arduino Nano ESP32                          | 1        | 24.00             | 24.00     |
+| Grove - 6-Axis Accelerometer & Gyroscope    | 1        | 26.50             | 26.50     |
+| OpenMV Cam H7 R2                            | 1        | 60.50             | 60.50     |
+| Prototype Boards                            | 2        | 5.00              | 10.00     |
+| Metal Rods (2mm diameter, various lengths)  | 6        | 0.50              | 3.00      |
+| 100g Fishing Weights                        | 2        | 5.00              | 10.00     |
+| **LEGO Pieces:**                            |          |                    |           |
+| Pin Connector Block (39793)                 | 2        | 0.40              | 0.80      |
+| Axle 3L with Stop (24316)                   | 2        | 0.50              | 1.00      |
+| Gear 20 Tooth Double Bevel (32269)          | 1        | 1.20              | 1.20      |
+| Gear Differential 28 Tooth Bevel (62821b)   | 1        | 3.50              | 3.50      |
+| Gear 12 Tooth Bevel (6589)                  | 3        | 0.50              | 1.50      |
+| Axles 7L                                    | 2        | 0.60              | 1.20      |
+| Bush 1/2 (4265c)                            | 4        | 0.20              | 0.80      |
+| Wheels (39367pb01)                          | 4        | 2.00              | 8.00      |
+
+**Total for Components:** **€201.00**
+
+---
+
+## 3D Printing Costs <a class="anchor" id="3d-printing-costs"></a>
+
+- **Filament Used:**
+  - Prototypes: 1kg of PLA filament
+  - Final Parts: 80g of PLA-CF filament
+- **PLA-CF Filament Cost:** €32.00 per 1kg
+- **PLA Filament Cost:** €25.00 per 1kg
+
+| Filament Use      | Weight (g) | Cost (€) |
+|--------------------|------------|----------|
+| Prototypes         | 1,000      | 25.00    |
+| Final Parts        | 80         | 2.56     |
+
+**Total for 3D Printing:** **€27.56**
+
+---
+
+## Other Parts Tested <a class="anchor" id="other-parts-tested"></a>
+
+- **Approximate Cost for Additional Parts Tested:** €150.00
+
+---
+
+## Tools and Equipment <a class="anchor" id="tools-and-equipment"></a>
+
+| Tool                                   | Cost (€) |
+|----------------------------------------|----------|
+| Bambu Lab X1 Carbon 3D Printer         | 1,100.00 |
+| Soldering Kit                          | 46.00    |
+| Multimeter                             | 28.00    |
+| Miscellaneous Tools (e.g., pliers)     | 19.00    |
+
+**Total for Tools and Equipment:** **€1,193.00**
+
+---
+
+## Summary of Costs <a class="anchor" id="summary-of-costs"></a>
+
+| Category               | Total (€) |
+|------------------------|-----------|
+| Components             | 201.00    |
+| 3D Printing            | 27.56     |
+| Other Parts Tested      | 150.00    |
+| Tools and Equipment    | 1,193.00  |
+
+**Grand Total:** **€1,571.56**
+
+---
+
+*Note: Costs are approximate and based on current exchange rates and market prices.*
 
 <br>
 
