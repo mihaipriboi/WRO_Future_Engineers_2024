@@ -28,19 +28,20 @@ green_led = LED(2)
 blue_led = LED(3)
 
 green_led.on()
-blue_led.on()
+red_led.on()
 time.sleep(0.5)
 green_led.off()
-blue_led.off()
+red_led.off()
 time.sleep(0.5) # blink led with a cyan color so that we know the camera is ready
 
 # threshold values
 
 #red_threshold = [(35, 62, 40, 70, 5, 60)]
 #red_threshold = [(40, 65, 30, 70, 20, 65)]
-red_threshold = [(40, 55, 45, 70, 20, 65)]
+#red_threshold = [(40, 55, 30, 60, 25, 60), (40, 55, 45, 70, 20, 65), (30, 55, 20, 65, -15, 50)]
+red_threshold = [(30, 55, 20, 70, -15, 60)]
 
-green_threshold = [(45, 90, -50, -15, -20, 20), (15, 60, -45, -25, -5, 20), (21, 50, -30, -12, -32, 12)]
+green_threshold = [(45, 90, -50, -10, -25, 20), (15, 60, -45, -25, -5, 20), (21, 50, -30, -12, -32, 12)]
 #blue_threshold = [(10, 55, -15, 45, -45, -5)]
 blue_threshold = [(10, 80, -5, 25, -50, -5)]
 
@@ -49,27 +50,30 @@ blue_threshold = [(10, 80, -5, 25, -50, -5)]
 orange_threshold = [(50, 80, 5, 45, 15, 75)]
 #orange_threshold = [(40, 85, -10, 40, 20, 80)]
 
-parking_threshold = [(25, 63, 45, 65, -10, 10)]
+#parking_threshold = [(25, 63, 45, 65, -10, 10)]
+parking_threshold = [(30, 70, 10, 60, -15, 15)]
 
 # ROI values
 img = sensor.snapshot()
 cubes_roi = (0, int(img.height() / 2 + 8), img.width(), int(img.height() / 2 - 8))
 lines_roi = (0, int(img.height() / 2 + 15), img.width(), int(img.height() / 3 + 15))
-parking_roi = (0, 56, img.width(), 20)
+#parking_roi = (0, 56, img.width(), 20)
+parking_roi = (0, int(img.height() / 2 + 8), img.width(), int(img.height() / 2 - 8))
 
 # restrains values
-min_cube_height = 3
-min_cube_size = 35
+min_cube_height = 5 # 3 maybe increase this
+min_cube_size = 35 # 35 maybe increase this
 max_cube_size_red = 400 # 400
-max_cube_size_green = 300 # 300
+max_cube_size_green = 360 # 300
 
 line_blob_size = 350
-parking_blob_size = 1500
-density_thr = 0.6 # 0.6
+parking_blob_size_trigger = 1200
+parking_blob_size_min = 35
+density_thr = 0.7 # 0.6
 
 # PID values
-kp = 0.0033
-kd = 0.033
+kp = 0.0033  # 0.0033
+kd = 0.033   # 0.033
 err_old = 0
 
 # logic
@@ -84,10 +88,49 @@ def clamp(val, min_intv, max_intv):
         return max_intv
     return round(val, 3)
 
-# free the communication channel before sending a message
-def flush_characters():
-    while uart.any() != 0:
-        uart.read()
+def is_blob_in_blob(blob, blob2):
+    if not blob2:
+        return False
+    polygon = blob2.min_corners()
+    num_vertices = len(polygon)
+    (x, y) = (blob.cx(), blob.cy())
+    inside = False
+
+    # Store the first point in the polygon and initialize the second point
+    (p1x, p1y) = (polygon[0][0], polygon[0][1])
+
+    # Loop through each edge in the polygon
+    for i in range(1, num_vertices + 1):
+        # Get the next point in the polygon
+        (p2x, p2y) = (polygon[i % num_vertices][0], polygon[i % num_vertices][1])
+
+        # Check if the point is above the minimum y coordinate of the edge
+        if y > min(p1y, p2y):
+            # Check if the point is below the maximum y coordinate of the edge
+            if y <= max(p1y, p2y):
+                # Check if the point is to the left of the maximum x coordinate of the edge
+                if x <= max(p1x, p2x):
+                    # Calculate the x-intersection of the line connecting the point to the edge
+                    x_intersection = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
+
+                    # Check if the point is on the same line as the edge or to the left of the x-intersection
+                    if p1x == p2x or x <= x_intersection:
+                        # Flip the inside flag
+                        inside = not inside
+
+        # Store the current point as the first point for the next iteration
+        (p1x, p1y) = (p2x, p2y)
+
+    # Return the value of the inside flag
+    return inside
+
+def is_cube(blob, line_blob, parking_blobs):
+    if blob.density() >= density_thr and blob.h() > min_cube_height and not is_blob_in_blob(blob, line_blob):
+        for parking_wall_blob in parking_blobs:
+            if is_blob_in_blob(blob, parking_wall_blob):
+                return False
+        return True
+    return False
 
 clock = time.clock()
 
@@ -162,8 +205,17 @@ while (True):
         green_blobs = img.find_blobs(green_threshold, roi=cubes_roi, pixels_threshold=min_cube_size, area_threshold=min_cube_size, merge=True)
 
         # find the coloured blobs corresponding to the parking walls
-        parking_blobs = img.find_blobs(parking_threshold, roi=parking_roi, pixels_threshold=parking_blob_size, area_threshold=parking_blob_size, merge=True)
-
+        parking_blobs = img.find_blobs(parking_threshold, roi=parking_roi, pixels_threshold=parking_blob_size_min, area_threshold=parking_blob_size_min, merge=True)
+        max_area = 0
+        parking_wall_blob = None
+        for blob in parking_blobs:
+#            img.draw_rectangle(blob.rect(), color=(0, 255, 0))
+            # we're keeping the biggest parking blob
+            if blob.area() > max_area:
+                max_area = blob.area()
+                parking_wall_blob = blob
+#        if parking_wall_blob:
+#            img.draw_rectangle(parking_wall_blob.rect(), color=(0, 255, 0))
 #        img.draw_rectangle(cubes_roi, color=(0,0,255))
 
         msg = "0\n"
@@ -173,7 +225,7 @@ while (True):
         for blob in red_blobs: # for every red blob
             # if they're passing the height and density filters
             # we're keeping the biggest one and its color
-            if blob.density() >= density_thr and blob.h() > min_cube_height and blob.area() > max_area:
+            if is_cube(blob, orange_blob, parking_blobs) and blob.area() > max_area:
                 max_area = blob.area()
                 saved_cube = blob
                 color = 'red'
@@ -183,7 +235,7 @@ while (True):
         for blob in green_blobs: # for every green blob
             # if they're passing the height and density filters
             # we're keeping the biggest one and its color
-            if blob.density() >= density_thr and blob.h() > min_cube_height and blob.area() > max_area:
+            if is_cube(blob, blue_blob, parking_blobs) and blob.area() > max_area:
                 max_area = blob.area()
                 saved_cube = blob
                 color = 'green'
@@ -199,18 +251,15 @@ while (True):
             # it means we must avoid the cube as we are too close to it
             if (color == 'red' and saved_cube.pixels() >= max_cube_size_red) or (color == 'green' and saved_cube.pixels() >= max_cube_size_green):
 #                img.draw_cross(saved_cube.cx(), saved_cube.cy(), color=(0, 255, 0))
-                flush_characters() # making sure i can send the trigger
                 # send the right trigger
                 if color == 'red':
                     uart.write('R\n')
-#                        print('R\n')
+#                    print('R\n')
                 else:
                     uart.write('G\n')
-#                        print('G\n')
-                if has_line: # maybe add centroid inclusion checker
-                    # if we must also turn
-                    while uart.any() != 0: # we make sure we can send the trigger
-                        uart.read()
+#                    print('G\n')
+                if has_line:
+                    # if we must also turn, send the trigger
                     uart.write(str(direction) + '\n') # send the turn trigger
 #                    print(str(direction))
             else: # if the cube isn't too big we must follow it
@@ -224,27 +273,23 @@ while (True):
                     msg = 'r' + str(steering) + '\n'
                 else:
                     msg = 'g' + str(steering) + '\n'
-                flush_characters() # making sure i can send the message
-                uart.write(msg)
+                uart.write(msg) # send the message
 #                print(msg)
-                if has_line: # maybe add centroid inclusion checker
-                    # if we must also turn
-                    flush_characters() # making sure i can send the turn trigger
+                if has_line:
+                    # if we must also turn, send the turn trigger
                     uart.write(str(direction) + '\n')
 #                    print(str(direction))
         elif has_line: # if we don't see any cubes
-            # if we must turn
-            flush_characters() # making sure i can send the turn trigger
+            # if we must turn, send the turn trigger
             uart.write(str(direction) + '\n')
 #            print(str(direction))
-        if parking_blobs: # maybe add centroid inclusion checker
-            # if we saw the parking walls
-            flush_characters() # making sure i can send the parking trigger
+        if parking_wall_blob and parking_wall_blob.pixels() >= parking_blob_size_trigger and parking_wall_blob.area() >= parking_blob_size_trigger:
+            # if we saw the parking walls, send the parking trigger
+#            img.draw_rectangle(parking_wall_blob.rect(), color=(0, 255, 0))
             uart.write('P\n')
 #            print('P\n')
     else: # if we're running the quali code
         if has_line:
-            # if we must turn
-            flush_characters() # making sure i can send the turn trigger
+            # if we must turn, send the turn trigger
             uart.write(str(direction) + '\n')
 #            print(str(direction))

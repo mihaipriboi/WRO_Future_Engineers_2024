@@ -18,7 +18,13 @@ double map_double(double x, double in_min, double in_max, double out_min, double
 
 void flush_messages() {
   while (Serial0.available() > 0) { // if we have some characters waiting
-    Serial0.read(); // flush the character
+    char receivedChar = Serial0.read(); // we get the first character
+    if (receivedChar == '\n') { // if it's the end of message marker
+      receivedMessage = ""; // reset the received message
+    }
+    else {
+      receivedMessage += receivedChar; // append characters to the received message
+    }
   }
 }
 
@@ -31,13 +37,15 @@ void custom_delay(long long delay_time) { // delay function that flushes all of 
 }
 
 bool valid_command(String cmd) { // function that checks the validity of a command received from the camera
+  if (cmd == "")
+    return false;
   if ('0' <= cmd[0] && cmd[0] <= '9') {
     if (cmd[0] > '2' || cmd[0] == '0')
       return false;
     if (cmd.length() != 1)
       return false;
   }
-  // if (cmd[0] != 'r' && cmd[0] != 'g' && cmd[0] != 'R' && cmd[0] != 'G')
-  //   return false;
+  if (cmd[0] == '+' || cmd[0] == '-' || cmd[0] == '.')
+    return false;
   return true;
 }

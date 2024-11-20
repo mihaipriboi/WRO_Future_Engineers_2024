@@ -8,12 +8,13 @@
 
 // -----Cases-----
 #define PID 0
-#define STOP 1
-#define FOLLOW_CUBE 2
-#define AFTER_CUBE 3
-#define FIND_PARKING 4
-#define STOP_BEFORE_PARKING 5
-#define PARK 6
+#define STOP_QUALI 1
+#define STOP_FINAL 2
+#define FOLLOW_CUBE 3
+#define AFTER_CUBE 4
+#define FIND_PARKING 5
+#define STOP_BEFORE_PARKING 6
+#define PARK 7
 
 int CASE = PID;
 bool TURNED = false;
@@ -21,27 +22,32 @@ bool TURNED = false;
 // -----Angles-----
 #define CORRECTION_ANGLE 45
 #define AVOIDANCE_ANGLE 45
+#define TURNAROUND_ANGLE 50
 double follow_cube_angle = 0;
 
 // -----Distances-----
 #define CORNER_DISTANCE_FINAL 0
 #define CORNER_DISTANCE_QUALI 42 // maybe 40 if the battery is overcharged
 #define CORNER_DISTANCE_PARKING 60
-#define CORNER_DISTANCE_PARKING_FIRST_TURN 70
+int CORNER_DISTANCE_PARKING_INSIDE = 62;
 
 // -----Velocities-----
 #define MOTOR_SPEED 100
+#define PARKING_SPEED 70
 
 // -----Times-----
 #define TURNAROUND_DELAY 1600
 #define FIRST_STOP_DELAY 1500
+#define FOLLOW_CUBE_DEAD_TIME 100
 
 // -----Logic-----
 int turn_direction = 0;
 int delay_walls = 250;
 int cube_last = 0;
-int turns_parking = 0;
 int turns = 0;
+long last_follow_cube = 0;
+bool IS_OUTSIDE = false;
+bool USED_POSITIONING = false;
 
 // -----Debug-----
 long last_gyro_read = 0;
@@ -51,8 +57,8 @@ int freq = 0;
 void pass_cube(int cube_last) {
   read_gyro(false);
   int start_angle = gx;
-  move_until_angle(MOTOR_SPEED, start_angle + cube_last * -AVOIDANCE_ANGLE);
-  move_cm_gyro(7, MOTOR_SPEED, start_angle + cube_last * -AVOIDANCE_ANGLE);
+  move_until_angle(MOTOR_SPEED, start_angle - cube_last * AVOIDANCE_ANGLE);
+  move_cm_gyro(15, MOTOR_SPEED, start_angle - cube_last * AVOIDANCE_ANGLE);
   CASE = AFTER_CUBE;
 }
 
@@ -95,6 +101,7 @@ void execute(String cmd) {
       if (cmd[0] == 'r' || cmd[0] == 'g') { // if we see a cube but we're not close enough to avoid it
         follow_cube_angle = val * sign;
         CASE = FOLLOW_CUBE;
+        last_follow_cube = millis();
         return;
       }
     }
@@ -113,22 +120,29 @@ void execute(String cmd) {
     if (millis() - last_rotate > delay_walls) { // if we can make a turn
       if (CASE == FIND_PARKING) { // if we're searching for the parking spot
         // if we're at the first turn, we have to move more in order to position ourselves close to the outer walls
-        if (turns_parking == 0)
-          move_cm_gyro(CORNER_DISTANCE_PARKING_FIRST_TURN, MOTOR_SPEED, current_angle_gyro);
+        if (!IS_OUTSIDE) {
+          move_cm_gyro(CORNER_DISTANCE_PARKING_INSIDE, MOTOR_SPEED, current_angle_gyro);
+        }
         else
           move_cm_gyro(CORNER_DISTANCE_PARKING, MOTOR_SPEED, current_angle_gyro);
-        turns_parking++;
+        IS_OUTSIDE = true;
       }
-      else if (abs(current_angle_gyro - gx) < 10) { // if we're during the obstacle round or in the quali and we're straight
+      else if (0 < (current_angle_gyro - gx) * turn_direction && (current_angle_gyro - gx) * turn_direction < 10) { // if we're during the obstacle round or in the quali and we're straight
         // position ourselves in order to not hit the walls
         if (QUALI)
           move_cm_gyro(CORNER_DISTANCE_QUALI, MOTOR_SPEED, current_angle_gyro);
         else
           move_cm_gyro(CORNER_DISTANCE_FINAL, MOTOR_SPEED, current_angle_gyro);
       }
-      else if (CASE != FOLLOW_CUBE) { // if we're crooked after avoiding a cube we position ourselves for the turn
-        move_until_angle(MOTOR_SPEED, current_angle_gyro + turn_direction * 20);
-        move_cm_gyro(7, MOTOR_SPEED, current_angle_gyro);
+      else if (CASE == AFTER_CUBE) { // if we're crooked after avoiding a cube we position ourselves for the turn
+        if (-cube_last == turn_direction) {
+          move_until_angle(MOTOR_SPEED, current_angle_gyro - turn_direction * 0);
+        }
+        else {
+          move_until_angle(MOTOR_SPEED, current_angle_gyro + turn_direction * 30); // maybe 45?
+          move_cm_gyro(7, MOTOR_SPEED, current_angle_gyro + turn_direction * 30); // maybe 45?
+        }
+        CASE = PID;
       }
       current_angle_gyro += turn_direction * 90; // update the goal angle for the next sequence
       turns++; // increase the number of turns made
@@ -147,17 +161,23 @@ void check_and_execute_turnaround(double gx) {
   // (so that we can see the first cube in the starting sequence in case this sequence had 2 cubes and we spawned between them)
   if (QUALI)
     return;
-  if (!TURNED && turns == 8 && cube_last == 1 && millis() - last_rotate > TURNAROUND_DELAY) {
-    if ((current_angle_gyro - turn_direction * 90) - gx > 0) {
-      current_angle_gyro += turn_direction * 90;
-    }
-    else {
-      current_angle_gyro -= turn_direction * 270;
-    }
+  if (!TURNED && turns == 8 && cube_last == 1 && millis() - last_rotate > TURNAROUND_DELAY) { // may have to take out the time condition for any case except AFTER_CUBE
+    move_until_angle(MOTOR_SPEED, current_angle_gyro + turn_direction * TURNAROUND_ANGLE);
+    move_cm_gyro(25, MOTOR_SPEED, current_angle_gyro + turn_direction * TURNAROUND_ANGLE); // position ourselves so that we have room to turn around
     turn_direction *= -1;
+    current_angle_gyro += turn_direction * 180;
+    move_until_angle(MOTOR_SPEED, current_angle_gyro + turn_direction * TURNAROUND_ANGLE);
     TURNED = true;
     CASE = PID;
   }
+}
+
+void position_for_stop_parking() {
+  move_until_angle(MOTOR_SPEED, current_angle_gyro - turn_direction * 35);
+  move_cm_gyro(30, MOTOR_SPEED, current_angle_gyro - turn_direction * 35);
+  move_until_angle(MOTOR_SPEED, current_angle_gyro);
+  IS_OUTSIDE = true;
+  USED_POSITIONING = true;
 }
 
 void loop_function() {
@@ -172,15 +192,19 @@ void loop_function() {
   read_gyro(false);
 
   switch(CASE) {
+
     case PID: {
       check_and_execute_turnaround(gx);
       double err = current_angle_gyro - gx;
       if (millis() - last_rotate > FIRST_STOP_DELAY && turns >= 12) { // if we did 3 runs of the round
         if (!QUALI) {
+          position_for_stop_parking();
+          if (cube_last != turn_direction)
+            CORNER_DISTANCE_PARKING_INSIDE += 2;
           CASE = STOP_BEFORE_PARKING; // we need to stop and search for the parking
         }
         else {
-          CASE = STOP; // stop, challenge over
+          CASE = STOP_QUALI; // stop, challenge over
         }
       }
       else {
@@ -196,9 +220,16 @@ void loop_function() {
     case FOLLOW_CUBE: {
       check_and_execute_turnaround(gx);
       if (millis() - last_rotate > FIRST_STOP_DELAY && turns >= 12) { // if we did 3 runs of the obstacle round, we need to stop and search for the parking
+        if (abs(follow_cube_angle) < 0.2) {
+          position_for_stop_parking();
+          if (cube_last != turn_direction)
+            CORNER_DISTANCE_PARKING_INSIDE += 2;
+        }
         CASE = STOP_BEFORE_PARKING;
       }
       else {
+        if (millis() - last_follow_cube > FOLLOW_CUBE_DEAD_TIME)
+          CASE = PID;
         // write to the servo the pid computed on the camera in order to follow the cube
         move_servo(follow_cube_angle);
         move_motor(MOTOR_SPEED);
@@ -209,6 +240,9 @@ void loop_function() {
     case AFTER_CUBE: {
       check_and_execute_turnaround(gx);
       if (millis() - last_rotate > FIRST_STOP_DELAY && turns >= 12) { // if we did 3 runs of the obstacle round, we need to stop and search for the parking
+        position_for_stop_parking();
+        if (cube_last != turn_direction)
+          CORNER_DISTANCE_PARKING_INSIDE += 2;
         CASE = STOP_BEFORE_PARKING;
       }
       else {
@@ -231,31 +265,6 @@ void loop_function() {
       break;
     }
 
-    case STOP: {
-      // we finished the challenge, stop the robot
-      move_until_angle(MOTOR_SPEED, current_angle_gyro);
-      move_cm_gyro(10, MOTOR_SPEED, current_angle_gyro);
-      is_running = false;
-      Serial.println("Stop case");
-      motor_break(100000);
-    }
-
-    case STOP_BEFORE_PARKING: {
-      // straighten ourselves, start searching for the parking
-      move_until_angle(MOTOR_SPEED, current_angle_gyro);
-      turns_parking = 0;
-      CASE = FIND_PARKING;
-      break;
-    }
-
-    case PARK: {
-      // hardcoded sequence of moves that positions us in the parking spot
-      move_until_angle(MOTOR_SPEED, current_angle_gyro + turn_direction * 55);
-      move_until_angle(MOTOR_SPEED, current_angle_gyro - turn_direction * 90);
-      CASE = STOP;
-      break;
-    }
-
     case FIND_PARKING: {
       // classic pid on the gyro so that we can move straight
       double err = current_angle_gyro - gx;
@@ -266,6 +275,42 @@ void loop_function() {
       break;
     }
     
+    case STOP_BEFORE_PARKING: {
+      // straighten ourselves, start searching for the parking
+      IS_OUTSIDE = false;
+      CASE = FIND_PARKING;
+      break;
+    }
+
+    case PARK: {
+      // hardcoded sequence of moves that positions us in the parking spot
+      // if (USED_POSITIONING)
+      //   move_cm_gyro(45, -PARKING_SPEED, current_angle_gyro);
+      // else
+      //   move_cm_gyro(50, -PARKING_SPEED, current_angle_gyro);
+      move_until_angle(PARKING_SPEED, current_angle_gyro + turn_direction * 70);
+      move_until_angle(PARKING_SPEED, current_angle_gyro - turn_direction * 90);
+      // move_cm_gyro(1, PARKING_SPEED, current_angle_gyro - turn_direction * 85);
+      CASE = STOP_FINAL;
+      break;
+    }
+    
+    case STOP_FINAL: {
+      // we finished the challenge, stop the robot
+      is_running = false;
+      Serial.println("Stop case");
+      motor_break(100000);
+    }
+
+    case STOP_QUALI: {
+      // we finished the challenge, stop the robot
+      move_until_angle(MOTOR_SPEED, current_angle_gyro);
+      move_cm_gyro(10, MOTOR_SPEED, current_angle_gyro);
+      is_running = false;
+      Serial.println("Stop case");
+      motor_break(100000);
+    }
+
     default: {
       break;
     }
