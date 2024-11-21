@@ -148,12 +148,12 @@ Learn more about the challenge [here](https://wro-association.org/wp-content/upl
 
 ## Photos of our robot MOOYA (Mechanized Optimization for Outstanding Yield and Adaptation) <a class="anchor" id="robot-image"></a>
 
-| <img src="./robot-photos/front.jpeg" width="90%" /> | <img src="./robot-photos/back.jpeg" width="85%" /> | 
+| <img src="./robot-photos/front.png" width="90%" /> | <img src="./robot-photos/back.png" width="85%" /> | 
 | :--: | :--: | 
 | *Front* | *Back* |
-| <img src="./robot-photos/left.jpeg" width="90%" /> | <img src="./robot-photos/right.jpeg" width="85%" /> | 
+| <img src="./robot-photos/left.png" width="90%" /> | <img src="./robot-photos/right.png" width="85%" /> | 
 | *Left* | *Right* |
-| <img src="./robot-photos/top.jpeg" width="90%" /> | <img src="./robot-photos/bottom.jpeg" width="85%" /> | 
+| <img src="./robot-photos/top.png" width="90%" /> | <img src="./robot-photos/bottom.png" width="85%" /> | 
 | *Top* | *Bottom* |
 
 <br>
