@@ -978,12 +978,6 @@ elif has_line: # if we don't see any cubes
 
 ---
 
-### Cube Detection
-![Red Cube Detection](./other/readme-images/red-cube-camera.png)
-![Green Cube Detection](./other/readme-images/green-cube-camera.png)
-
----
-
 The arduino part is quite simple, consisting of the quali switch but with two extra cases: ```FOLLOW_CUBE``` and ```AFTER_CUBE```. In the ```FOLLOW_CUBE``` case we just write to the servo the steering angle calculated by the PID algorithm ran on the camera. After we get the proximity trigger from the camera, we have a custom function called ```pass_cube``` which steers us away from the cube and puts us in the ```AFTER_CUBE``` state. This case consists of two substates: in the first one the robot steers in the opposite direction to center itself again and the second one in which the robot uses a PID with the gyro to move an additional distance so that we're perfectly positioned to see the next cube. After that, we go back to the default ```PID``` case that is used in the quali code.
 
 ```ino
