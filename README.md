@@ -70,7 +70,7 @@ This repository contains the documentation for the Nerdvana Cancer team's robot 
 
 <b>High School:</b> National College of Informatics "Tudor Vianu", Bucharest
 
-<b>Description:</b> Hi! I’m Victor from Romania and I own the fact that I’m a huge nerd: from coding and robotics, to photography, cinema, music, and even f1.
+<b>Description:</b> Hi! I’m Victor from Romania and this is my second WRO season. Last year I participated in the RoboMission category and this year I wanted a new challenge. I own the fact that I’m a huge nerd: from coding and robotics, to photography, cinema, music, guitar, and even Formula 1.
 
 ---
 
