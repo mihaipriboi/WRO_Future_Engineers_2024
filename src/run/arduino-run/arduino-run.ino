@@ -25,6 +25,8 @@ void loop() {
     
     digitalWrite(LED_BUILTIN, LOW);
     digitalWrite(DEBUG_LED, LOW); // turn off the debugging leds
+
+    custom_delay(3000);
     
     last_rotate = millis(); // initialize times
     // time_elapsed = millis();
