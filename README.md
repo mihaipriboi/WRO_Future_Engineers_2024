@@ -638,7 +638,8 @@ void loop() {
 
 Now that we finished to implement the functions we need to make the robot move and steer, we have to make him see the lines that trigger the turns, the cubes and the parking walls and move accordingly. To communicate with the camera, we use the ```UART``` protocol. In order for this to work, we must link the ```RX0``` pin on the arduino (the receiver pin) to the ```P4``` pin on the camera (the transmitter pin) and the ```TX1``` pin on the arduino (the transmitter pin) to the ```P5``` pin on the camera (the receiver pin). In addition, the baud rates from the ```Serial0``` object on the arduino and the ```uart``` object on the camera must match.
 
-Arduino code:
+**Arduino code:**
+
 ```ino
 void comm_setup() {
   Serial.begin(9600);
@@ -668,7 +669,8 @@ void loop() {
 }
 ```
 
-Camera code:
+**Camera code:**
+
 ```py
 # setup UART connection to arduino
 uart = UART(3, 19200)
@@ -1101,7 +1103,8 @@ if wall_blobs:
 
 ---
 
-Arduino code:
+**Arduino code:**
+
 ```ino
 case STOP_BEFORE_FIND_PARKING: {
   // straighten ourselves, start searching for the parking
@@ -1163,7 +1166,7 @@ case STOP_FINAL: {
 
 ## Additional code <a class="anchor" id="additional-code"></a>
 
-**Arduino:**
+**Arduino code:**
 
 In order to clean up the code, we designed some additional functions. Whenever we want to call locomotion functions or delay functions, functions that would break the continuity of the loop function, we must do two things to make sure everything keeps working: flush the characters sent by the camera (using the ```flush_messages``` function) and read the gyro data. That's why we implemented a custom delay function and our locomotion functions are a bit atypical.
 
@@ -1351,7 +1354,7 @@ void execute(String cmd) {
 }
 ```
 
-**Camera:**
+**Camera code:**
 
 In order to make the robot more stable in any light conditions, we had to make sure that the red, orange and magenta, respectively the green and the blue colors don't get confused in the color detection process. That's why in order to ensure the best accuracy we fine tuned our color thresholds so that we can never see magenta/orange on a red cube or blue on a green cube. The problem that remained is that we saw red in magenta/orange and green in blue. That's why we came up with a simple solution: if a red/green blob is inside another blob that can be mixed up with, such as a line blob or a parking wall blob, we simply ignore it, as it is a false cube detected.
 
