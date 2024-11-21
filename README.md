@@ -5,6 +5,7 @@
 [![Website](https://img.shields.io/badge/Website-Visit-brightgreen?style=for-the-badge&logo=web&logoColor=white)](https://nerdvana.ro)
 [![Facebook](https://img.shields.io/badge/Facebook-%231877F2.svg?style=for-the-badge&logo=Facebook&logoColor=white)](https://www.facebook.com/nerdvanaro/)
 [![Instagram](https://img.shields.io/badge/Instagram-%23E4405F.svg?style=for-the-badge&logo=Instagram&logoColor=white)](https://instagram.com/nerdvana_romania/)
+[![Youtube](https://img.shields.io/badge/Youtube-%23FF0000.svg?style=for-the-badge&logo=Youtube&logoColor=white)](https://www.youtube.com/@NerdvanaRomania)
 
 This repository contains the documentation for the Nerdvana Cancer team's robot for the 2024 World Robot Olympiad Future Engineers competition. The robot, was designed and built by a team of three students.
 
@@ -83,7 +84,7 @@ This repository contains the documentation for the Nerdvana Cancer team's robot 
 
 <b>University:</b> University of Bucharest
 
-<b>Description:</b> Hello there! My name is Teo and I'm excited to be part of this amazing team. I have a passion for programming and robotics, and I'm always eager to learn and explore new technologies. In my free time, you can find me playing sports or enjoying my favorite video games. I believe that with dedication and teamwork, we can achieve great things together. Let's make our mark in the world of robotics!
+<b>Description:</b> Wassup y'all! My name is Teodor, and I love traveling and experiencing new things. Since I was a kid, I’ve always been drawn to solving puzzles, playing basketball, discovering new inventions, and thinking of creative ways to do things. Also, I know how to do a backflip. 🤠
 
 ---
 
@@ -96,7 +97,7 @@ This repository contains the documentation for the Nerdvana Cancer team's robot 
 
 <b>University:</b> Politehnica University of Bucharest
 
-<b>Description:</b> Hello! I am Mihai! I've been participating at WRO since 2015 and I am very excited to be part of the Nerdvana Romania team. My academic passions are programming, physics and robotics, but I also enjoy playing the piano 🎹, whatching movies 🎬 and Formula 1 🏎️🏁.
+<b>Description:</b> Hello! I am Mihai! I've been participating at WRO since 2015 and I am very excited to be part of the Nerdvana Romania team. My academic passions are programming, physics and robotics, but I also enjoy playing the piano 🎹, whatching movies 🎬, traveling ✈️ and Formula 1 🏎️🏁.
 
 ---
 
@@ -158,7 +159,7 @@ Learn more about the challenge [here](https://wro-association.org/wp-content/upl
 
 <br>
 
-## Our video of the robot on [Youtube](https://youtu.be/C5bkap5dbnA) <a class="anchor" id="video"></a>
+## Our video of the robot on [Youtube](https://www.youtube.com/watch?v=aLT0-nPUaAE) <a class="anchor" id="video"></a>
 
 <br>
 
@@ -458,10 +459,6 @@ Where to buy the OpenMV Cam H7 R2: https://openmv.io/products/openmv-cam-h7-r2
 - Upgrade to a camera with higher resolution for better object detection and tracking.
 - Test alternative lighting solutions to improve visibility in various conditions.
 - Implement advanced image processing algorithms to enhance detection accuracy.
-- Integrate a camera calibration system to ensure consistent performance across different environments.
-To make the colors easier to calibrate, you can implement the following steps:
-- Use a color calibration chart: Create a chart with different color patches that cover a wide range of hues, saturations, and brightness levels. Capture images of the chart under different lighting conditions and use these images to calibrate the color detection algorithm.
-- Implement automatic white balance: Use algorithms to automatically adjust the white balance of the camera based on the captured image. This helps in removing any color cast caused by the lighting conditions and ensures accurate color detection.
 - Use color correction algorithms: Apply color correction algorithms to compensate for any variations in lighting conditions. These algorithms can adjust the color values of the captured image to match a reference color space, making the colors more consistent and easier to calibrate.
 - Provide user-adjustable parameters: Allow users to manually adjust color thresholds or ranges to fine-tune the color detection. This can be done through a user interface or by providing configuration files that can be modified.
 - Implement real-time feedback: Display the detected colors in real-time to the user, along with the calibrated values. This allows users to visually verify the accuracy of the color detection and make adjustments if necessary.
@@ -489,8 +486,6 @@ To provide the Arduino Nano ESP32 with the required 5V, we needed to decrease th
 Where to buy the 5V voltage regulator: https://ro.mouser.com/ProductDetail/STMicroelectronics/L7805CV?qs=9NrABl3fj%2FqplZAHiYUxWg%3D%3D
 
 <br>
-
-### Voltage Regulator
 
 **Potential Improvements**:
 - Replace the linear voltage regulator with a switching regulator for better efficiency.
@@ -914,6 +909,9 @@ case STOP: {
 }
 ```
 
+### Line Detection
+![Line Detection](./other/readme-images/orange-line-camera.png)
+
 ## Final Round <a class="anchor" id="final-management"></a>
 
 For the final round, we based our controller algorithm on the quali code, adding a PID controller on the camera to follow the closest cube until it is in its proximity. In order to get the closest cube to the robot we just search for the biggest red or green coloured blob in the image.
@@ -982,6 +980,12 @@ elif has_line: # if we don't see any cubes
     flush_characters() # making sure i can send the turn trigger
     uart.write(str(direction) + '\n')
 ```
+
+### Cube Detection
+![Red Cube Detection](./other/readme-images/red-cube-camera.png)
+![Green Cube Detection](./other/readme-images/green-cube-camera.png)
+
+---
 
 The arduino part is quite simple, consisting of the quali switch but with two extra cases: FOLLOW_CUBE and AFTER_CUBE. In the FOLLOW_CUBE case we just write to the servo the steering angle calculated by the PID algorithm ran on the camera. After we get the proximity trigger from the camera, we have a custom function called ```pass_cube``` which steers us away from the cube and puts us in the AFTER_CUBE state. This case consists of two substates: in the first one the robot steers in the opposite direction to center itself again and the second one in which the robot uses a PID with the gyro to move an additional distance so that we're perfectly positioned to see the next cube. After that, we go back to the default PID case that is used in the quali code.
 
@@ -1074,6 +1078,11 @@ if parking_blobs: # maybe add centroid inclusion checker
     flush_characters() # making sure i can send the parking trigger
     uart.write('P\n')
 ```
+
+### Parking Wall Detection
+![Parking Wall Detection](./other/readme-images/parking-camera.png)
+
+---
 
 Arduino code:
 ```ino
