@@ -525,7 +525,7 @@ The motor driver can be directly managed with a single PWM pin that adjusts the 
 
 We devised two functions within our control system: one to modify the motor's velocity and another to halt it effectively, incorporating a braking feature. To achieve this, we convert the desired speed from our established scale of -100 to +100 to the PWM equivalent of 0 to 1023. The motor's direction is then adjusted according to the sign of the input value.
 
-Given the fact that the Arduino has an ESP chip, the PWM signals have to be sent using the ledc utility.
+Given the fact that the Arduino has an ESP chip, the PWM signals have to be sent using the ```ledc``` utility.
 
 ```ino
 void motor_driver_setup() {
@@ -567,7 +567,7 @@ void motor_break(long long break_time) { // stop the robot for a given time
 }
 ```
 
-However, for the encoder, we required a specialized library to handle the more complex signal processing. The library we use for interfacing with the encoder is called _Encoder.h_.
+However, for the encoder, we required a specialized library to handle the more complex signal processing. The library we use for interfacing with the encoder is called ```Encoder.h```.
 
 The encoder operates with a straightforward function that we found easy to comprehend and program. In order to determine the distance in cm, we divided the returned value by 12, since the encoder measures 12 counts per revolution. Then we multiplied this with the gear ratio, wheel diameter and pi. After that we divied by 10 to convert to cm.
 
@@ -581,7 +581,7 @@ double read_motor_cm() {  // getting the distance driven by the motor in cm
 
 ## Servo Motor <a class="anchor" id="servo-motor-code"></a>
 
-For controlling the servo motor, we utilize the _Servo.h_ library, which provides the necessary functions to manage the servo's movements. Initially, we configure the servo by establishing its range, defining the maximum and minimum angles it can achieve in both directions. This ensures that we can accurately position the servo within its operational limits.
+For controlling the servo motor, we utilize the ```Servo.h``` library, which provides the necessary functions to manage the servo's movements. Initially, we configure the servo by establishing its range, defining the maximum and minimum angles it can achieve in both directions. This ensures that we can accurately position the servo within its operational limits.
 
 ```ino
 void servo_setup() {
@@ -609,9 +609,9 @@ void servo_setup() {
 
 The servo motor is controlled dinamically in the loop by setting a goal angle and taking small steps towards that goal at every iteration. This way we make sure that we can send a lot of fast angle changes to the servo and get the wanted results.
 
-The function _move_servo_ sets the goal angle to the given parameter angle. If the angle is negative the motor will rotate to the right, and if it is positive, the motor will rotate to left. This way, 0 is going to be the position in which the wheels are straight. Also, the values we are giving the motor need to be between -1 and 1, so we use a clamp function to limit the value we are going to give the motor to roatate to and an interval mapping function to map the parameter from the [-1; 1] interval to the [ANGLE_MIN; ANGLE_MAX] interval.
+The function ```move_servo``` sets the goal angle to the given parameter angle. If the angle is negative the motor will rotate to the right, and if it is positive, the motor will rotate to left. This way, 0 is going to be the position in which the wheels are straight. Also, the values we are giving the motor need to be between -1 and 1, so we use a clamp function to limit the value we are going to give the motor to roatate to and an interval mapping function to map the parameter from the [-1; 1] interval to the [ANGLE_MIN; ANGLE_MAX] interval.
 
-The function _update_servo_ takes a small step towards the goal angle as described above.
+The function ```update_servo``` takes a small step towards the goal angle as described above.
 
 ```ino
 void move_servo(double angle) {  // move the servo to the angle checkpoint by setting the goal degrees to the angle value
@@ -643,7 +643,7 @@ void loop() {
 
 ## Camera <a class="anchor" id="camera-code"></a>
 
-Now that we finished to implement the functions we need to make the robot move and steer, we have to make him see the lines that trigger the turns, the cubes and the parking walls and move accordingly. To communicate with the camera, we use the UART protocol. In order for this to work, we must link the RX0 pin on the arduino (the receiver pin) to the P4 pin on the camera (the transmitter pin) and the TX1 pin on the arduino (the transmitter pin) to the P5 pin on the camera (the receiver pin). In addition, the baud rates from the Serial0 object on the arduino and the uart object on the camera must match.
+Now that we finished to implement the functions we need to make the robot move and steer, we have to make him see the lines that trigger the turns, the cubes and the parking walls and move accordingly. To communicate with the camera, we use the ```UART``` protocol. In order for this to work, we must link the ```RX0``` pin on the arduino (the receiver pin) to the ```P4``` pin on the camera (the transmitter pin) and the ```TX1``` pin on the arduino (the transmitter pin) to the ```P5``` pin on the camera (the receiver pin). In addition, the baud rates from the ```Serial0``` object on the arduino and the ```uart``` object on the camera must match.
 
 Arduino code:
 ```ino
@@ -709,7 +709,7 @@ sensor.set_auto_exposure(False, exposure_us=10000) # set constant exposure for t
 sensor.skip_frames(time=2000)
 ```
 
-Now for the camera logic, the color tracking is pretty simple: the camera can return blobs of pixels that fit into a certain LAB threshold representing a color. We can also restrain the blob detection to a rectangle of interest and apply pixel count, bounding rectangle area and density filters as well. The reason for which we do this, is that certain colors, like green, red, blue and orange are pretty common, therefore we don't want the camera to interpret clothes or other objects outside of the map as obstacles. In addition, the orange and red colors, in some light conditions, are quite similar. This is why we apply the pixel count, bounding rectangle area and density filters, to ensure that we are seeing the correct object. Therefore, for quali we firstly scan the color of the first seen line. This will give us the direction of the run. Then, we constantly look out for lines that are over a certain area. Once we find one, we send the turn trigger to the Arduino via UART.
+Now for the camera logic, the color tracking is pretty simple: the camera can return blobs of pixels that fit into a certain ```LAB``` threshold representing a color. We can also restrain the blob detection to a rectangle of interest and apply pixel count, bounding rectangle area and density filters as well. The reason for which we do this, is that certain colors, like green, red, blue and orange are pretty common, therefore we don't want the camera to interpret clothes or other objects outside of the map as obstacles. In addition, the orange and red colors, in some light conditions, are quite similar. This is why we apply the pixel count, bounding rectangle area and density filters, to ensure that we are seeing the correct object. Therefore, for quali we firstly scan the color of the first seen line. This will give us the direction of the run. Then, we constantly look out for lines that are over a certain area. Once we find one, we send the turn trigger to the Arduino via ```UART```.
 The color detection is the same for the cube and parking wall detection, therefore we'll explain only the code needed for quali.
 
 ```py
@@ -775,7 +775,7 @@ while (True):
 
 ## IMU <a class="anchor" id="gyro-sensor-code"></a>
 
-To utilize the gyro sensor, we needed to include the _BMI088.h_ library. During initialization, we allocate a 10-second window to measure the sensor's drift, allowing us to refine the robot's angular readings for greater precision. Additionally, we configure the sensor's output data rate to 400Hz and set the bandwidth to 47Hz. The bandwidth determines the frequency of data sampling by the sensor; a higher bandwidth yields more precise data at the cost of increased power consumption. We also designate pin 15 as an input and attach an interrupt to it, enabling us to capture data from the sensor as soon as it becomes available.
+To utilize the gyro sensor, we needed to include the ```_BMI088.h_``` library. During initialization, we allocate a 10-second window to measure the sensor's drift, allowing us to refine the robot's angular readings for greater precision. Additionally, we configure the sensor's output data rate to 400Hz and set the bandwidth to 47Hz. The bandwidth determines the frequency of data sampling by the sensor; a higher bandwidth yields more precise data at the cost of increased power consumption. We also designate pin 15 as an input and attach an interrupt to it, enabling us to capture data from the sensor as soon as it becomes available.
 
 ```ino
 void gyro_setup(bool debug) {
@@ -875,9 +875,9 @@ void read_gyro(bool debug) {
 
 For the qualifying round, we set up a basic switch-case system to guide our robot. This system tells the robot what to do next, depending on where it is. The robot knows where it is by counting how many times it has turned.
 
-We use two main switch cases: *PID*, and *STOP*.
+We use two main switch cases: ```PID```, and ```STOP_QUALI```.
 
-In the *PID* case, the robot moves straight and turns. It uses a special tool (PID controller) with a gyro sensor to stay on a straight line. If it sees a corner line, it gets a trigger from the camera to make a turn by adding 90 degrees to the goal angle.
+In the ```PID``` case, the robot moves straight and turns. It uses a special tool (PID controller) with a gyro sensor to stay on a straight line. If it sees a corner line, it gets a trigger from the camera to make a turn by adding 90 degrees to the goal angle.
 
 ```ino
 case PID: {
@@ -974,7 +974,7 @@ elif has_line: # if we don't see any cubes
     uart.write(str(direction) + '\n')
 ```
 
-The arduino part is quite simple, consisting of the quali switch but with two extra cases: FOLLOW_CUBE and AFTER_CUBE. In the FOLLOW_CUBE case we just write to the servo the steering angle calculated by the PID algorithm ran on the camera. After we get the proximity trigger from the camera, we have a custom function called ```pass_cube``` which steers us away from the cube and puts us in the AFTER_CUBE state. This case consists of two substates: in the first one the robot steers in the opposite direction to center itself again and the second one in which the robot uses a PID with the gyro to move an additional distance so that we're perfectly positioned to see the next cube. After that, we go back to the default PID case that is used in the quali code.
+The arduino part is quite simple, consisting of the quali switch but with two extra cases: ```FOLLOW_CUBE``` and ```AFTER_CUBE```. In the ```FOLLOW_CUBE``` case we just write to the servo the steering angle calculated by the PID algorithm ran on the camera. After we get the proximity trigger from the camera, we have a custom function called ```pass_cube``` which steers us away from the cube and puts us in the ```AFTER_CUBE``` state. This case consists of two substates: in the first one the robot steers in the opposite direction to center itself again and the second one in which the robot uses a PID with the gyro to move an additional distance so that we're perfectly positioned to see the next cube. After that, we go back to the default ```PID``` case that is used in the quali code.
 
 ```ino
 // hardcoded sequence that avoids a cube
@@ -1342,6 +1342,89 @@ void execute(String cmd) {
     }
   }
 }
+```
+
+**Camera:**
+
+In order to make the robot more stable in any light conditions, we had to make sure that the red, orange and magenta, respectively the green and the blue colors don't get confused in the color detection process. That's why in order to ensure the best accuracy we fine tuned our color thresholds so that we can never see magenta/orange on a red cube or blue on a green cube. The problem that remained is that we saw red in magenta/orange and green in blue. That's why we came up with a simple solution: if a red/green blob is inside another blob that can be mixed up with, such as a line blob or a parking wall blob, we simply ignore it, as it is a false cube detected.
+
+```py
+# detects if a blob is partially inside another blob
+# by checking if the center of one blob is inside the minimum area rectangle that wraps the other blob
+# giving the fact that this rectangle may be crooked, we have to use a special algorithm
+# that is designed to check whether a point is inside a polygon or not based on the coordinates
+def is_blob_in_blob(blob, blob2):
+    if not blob2:
+        return False
+    polygon = blob2.min_corners()
+    num_vertices = len(polygon)
+    (x, y) = (blob.cx(), blob.cy())
+    inside = False
+
+    # store the first point in the polygon
+    (p1x, p1y) = (polygon[0][0], polygon[0][1])
+
+    # loop through each edge in the polygon
+    for i in range(1, num_vertices + 1):
+        # get the next point in the polygon
+        (p2x, p2y) = (polygon[i % num_vertices][0], polygon[i % num_vertices][1])
+
+        # check if the point is above the minimum y coordinate of the edge
+        # check if the point is below the maximum y coordinate of the edge
+        # check if the point is to the left of the maximum x coordinate of the edge
+        if y > min(p1y, p2y) and y <= max(p1y, p2y) and x <= max(p1x, p2x):
+            # calculate the x-intersection of the line connecting the point to the edge
+            x_intersection = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
+
+            # check if the point is on the same line as the edge or to the left of the x-intersection
+            if p1x == p2x or x <= x_intersection:
+                # flip the inside flag
+                inside = not inside
+
+        # store the current point as the first point for the next iteration
+        (p1x, p1y) = (p2x, p2y)
+
+    # return the value of the inside flag
+    return inside
+
+# checks whether a blob is a cube or not based on the minimum height and density filters
+# as well as another check:
+# since in some light conditions the red the cube may be similar to the orange line or magenta parking walls
+# and in some light conditions the green the cube may be similar to the blue line
+# we have to check if the possible cube blob is inside any of these ones
+# if it is, then it may just be a false alarm and we should ignore it
+def is_cube(blob, line_blob, parking_blobs):
+    if blob.density() >= density_thr and blob.h() > min_cube_height and not is_blob_in_blob(blob, line_blob):
+        for parking_wall_blob in parking_blobs:
+            if is_blob_in_blob(blob, parking_wall_blob):
+                return False
+        return True
+    return False
+```
+
+In addition, we created the following functions in order to avoid code repetition or to break down complicated conditions.
+
+```py
+# function that gets the biggest blob by size
+def get_biggest_blob(blob_array):
+    max_area = 0
+    max_blob = None
+    for blob in blob_array:
+        # we're keeping the biggest parking blob
+        if blob.area() > max_area:
+            max_area = blob.area()
+            max_blob = blob
+    return max_blob
+
+# checks if a parking wall blob meets the height and size requirements
+def is_parking_wall(blob):
+    if not blob:
+        return False
+    if blob.pixels() >= parking_blob_size_trigger and blob.area() >= parking_blob_size_trigger:
+        return True
+    if blob.h() >= parking_blob_height_trigger:
+        return True
+    return False
 ```
 
 <br>
