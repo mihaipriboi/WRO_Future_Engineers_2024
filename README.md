@@ -121,8 +121,6 @@ Very social, I can easily blend in a team. Like to communicate a lot with others
   <p align="center">Nerdvana Romania Founder</p>
 </p>
 
-Nerdvana Romania Founder
-
 <b>Role:</b> Manager
 
 <b>Description:</b> I am a very ambitious person, I like to work hard and to be involved in many projects. I am a very organized person and I like to have everything planned. I am a very sociable person and I like to communicate with people. I am a very responsible person and I like to take care of everything that is happening around me. I am a very creative person and I like to come up with new ideas. I am a very determined person and I like to achieve my goals.
