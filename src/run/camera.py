@@ -28,10 +28,10 @@ green_led = LED(2)
 blue_led = LED(3)
 
 green_led.on()
-red_led.on()
+blue_led.on()
 time.sleep(0.5)
 green_led.off()
-red_led.off()
+blue_led.off()
 time.sleep(0.5) # blink led with a cyan color so that we know the camera is ready
 
 # threshold values
@@ -41,7 +41,8 @@ time.sleep(0.5) # blink led with a cyan color so that we know the camera is read
 #red_threshold = [(40, 55, 30, 60, 25, 60), (40, 55, 45, 70, 20, 65), (30, 55, 20, 65, -15, 50)]
 red_threshold = [(30, 55, 20, 70, -15, 60)]
 
-green_threshold = [(45, 90, -50, -10, -25, 20), (15, 60, -45, -25, -5, 20), (21, 50, -30, -12, -32, 12)]
+green_threshold = [(45, 90, -50, -10, -25, 20), (15, 60, -45, -15, -5, 20), (21, 50, -30, -12, -32, 12)]
+
 #blue_threshold = [(10, 55, -15, 45, -45, -5)]
 blue_threshold = [(10, 80, -5, 25, -50, -5)]
 
@@ -53,21 +54,27 @@ orange_threshold = [(50, 80, 5, 45, 15, 75)]
 #parking_threshold = [(25, 63, 45, 65, -10, 10)]
 parking_threshold = [(30, 70, 10, 60, -15, 15)]
 
+black_threshold = [(0, 45, -10, 15, -25, 10)]
+
 # ROI values
 img = sensor.snapshot()
 cubes_roi = (0, int(img.height() / 2 + 8), img.width(), int(img.height() / 2 - 8))
 lines_roi = (0, int(img.height() / 2 + 15), img.width(), int(img.height() / 3 + 15))
 #parking_roi = (0, 56, img.width(), 20)
 parking_roi = (0, int(img.height() / 2 + 8), img.width(), int(img.height() / 2 - 8))
+wall_roi = (0, int(img.height() / 3 + 10), img.width(), int(img.height() * 2 / 3 - 10))
+wall_roi_area = wall_roi[2] * wall_roi[3]
 
 # restrains values
-min_cube_height = 5 # 3 maybe increase this
-min_cube_size = 35 # 35 maybe increase this
+min_cube_height = 3
+min_cube_size = 35
 max_cube_size_red = 400 # 400
-max_cube_size_green = 360 # 300
+max_cube_size_green = 300 # 300
+wall_blob_size = 4900
 
 line_blob_size = 350
-parking_blob_size_trigger = 1200
+parking_blob_height_trigger = 10
+parking_blob_size_trigger = 700
 parking_blob_size_min = 35
 density_thr = 0.7 # 0.6
 
@@ -78,7 +85,7 @@ err_old = 0
 
 # logic
 direction = 0
-final = True
+FINAL = True
 
 # force the val into the [min_intv, max_intv] interval
 def clamp(val, min_intv, max_intv):
@@ -129,6 +136,25 @@ def is_cube(blob, line_blob, parking_blobs):
         for parking_wall_blob in parking_blobs:
             if is_blob_in_blob(blob, parking_wall_blob):
                 return False
+        return True
+    return False
+
+def get_biggest_blob(blob_array):
+    max_area = 0
+    max_blob = None
+    for blob in blob_array:
+        # we're keeping the biggest parking blob
+        if blob.area() > max_area:
+            max_area = blob.area()
+            max_blob = blob
+    return max_blob
+
+def is_parking_wall(blob):
+    if not blob:
+        return False
+    if blob.pixels() >= parking_blob_size_trigger and blob.area() >= parking_blob_size_trigger:
+        return True
+    if blob.h() >= parking_blob_height_trigger:
         return True
     return False
 
@@ -199,24 +225,23 @@ while (True):
     if orange_blob or blue_blob: # if we saw either coloured lines, we can make a turn
         has_line = True
 
-    if final: # if we're running the code for the final challenge
+    if FINAL: # if we're running the code for the final challenge
         # find the coloured blobs corresponding to the cubes
         red_blobs = img.find_blobs(red_threshold, roi=cubes_roi, pixels_threshold=min_cube_size, area_threshold=min_cube_size, merge=True)
         green_blobs = img.find_blobs(green_threshold, roi=cubes_roi, pixels_threshold=min_cube_size, area_threshold=min_cube_size, merge=True)
 
         # find the coloured blobs corresponding to the parking walls
         parking_blobs = img.find_blobs(parking_threshold, roi=parking_roi, pixels_threshold=parking_blob_size_min, area_threshold=parking_blob_size_min, merge=True)
-        max_area = 0
-        parking_wall_blob = None
-        for blob in parking_blobs:
-#            img.draw_rectangle(blob.rect(), color=(0, 255, 0))
-            # we're keeping the biggest parking blob
-            if blob.area() > max_area:
-                max_area = blob.area()
-                parking_wall_blob = blob
+        parking_wall_blob = get_biggest_blob(parking_blobs)
 #        if parking_wall_blob:
 #            img.draw_rectangle(parking_wall_blob.rect(), color=(0, 255, 0))
-#        img.draw_rectangle(cubes_roi, color=(0,0,255))
+
+        # find the coloured blobs corresponding to the outside walls
+        wall_blobs = img.find_blobs(black_threshold, roi=wall_roi, pixels_threshold=wall_blob_size, area_threshold=wall_blob_size, merge=True)
+        outer_wall = get_biggest_blob(wall_blobs)
+#        img.draw_rectangle(wall_roi, color=(0,0,255))
+#        for blob in wall_blobs:
+#            img.draw_rectangle(blob.rect(), color=(0, 255, 0))
 
         msg = "0\n"
         max_area = 0
@@ -283,11 +308,18 @@ while (True):
             # if we must turn, send the turn trigger
             uart.write(str(direction) + '\n')
 #            print(str(direction))
-        if parking_wall_blob and parking_wall_blob.pixels() >= parking_blob_size_trigger and parking_wall_blob.area() >= parking_blob_size_trigger:
+        if is_parking_wall(parking_wall_blob):
             # if we saw the parking walls, send the parking trigger
-#            img.draw_rectangle(parking_wall_blob.rect(), color=(0, 255, 0))
+            img.draw_rectangle(parking_wall_blob.rect(), color=(0, 255, 0))
             uart.write('P\n')
 #            print('P\n')
+        if wall_blobs:
+            if outer_wall.pixels() >= wall_roi_area and outer_wall.area() >= wall_roi_area:
+                uart.write('WP\n')
+#                print('WP\n')
+            else:
+                uart.write('W\n')
+#                print('W\n')
     else: # if we're running the quali code
         if has_line:
             # if we must turn, send the turn trigger
