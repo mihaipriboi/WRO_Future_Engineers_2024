@@ -95,6 +95,10 @@ def clamp(val, min_intv, max_intv):
         return max_intv
     return round(val, 3)
 
+# detects if a blob is partially inside another blob
+# by checking if the center of one blob is inside the minimum area rectangle that wraps the other blob
+# giving the fact that this rectangle may be crooked, we have to use a special algorithm
+# that is designed to check whether a point is inside a polygon or not based on the coordinates
 def is_blob_in_blob(blob, blob2):
     if not blob2:
         return False
@@ -103,34 +107,38 @@ def is_blob_in_blob(blob, blob2):
     (x, y) = (blob.cx(), blob.cy())
     inside = False
 
-    # Store the first point in the polygon and initialize the second point
+    # store the first point in the polygon
     (p1x, p1y) = (polygon[0][0], polygon[0][1])
 
-    # Loop through each edge in the polygon
+    # loop through each edge in the polygon
     for i in range(1, num_vertices + 1):
-        # Get the next point in the polygon
+        # get the next point in the polygon
         (p2x, p2y) = (polygon[i % num_vertices][0], polygon[i % num_vertices][1])
 
-        # Check if the point is above the minimum y coordinate of the edge
-        if y > min(p1y, p2y):
-            # Check if the point is below the maximum y coordinate of the edge
-            if y <= max(p1y, p2y):
-                # Check if the point is to the left of the maximum x coordinate of the edge
-                if x <= max(p1x, p2x):
-                    # Calculate the x-intersection of the line connecting the point to the edge
-                    x_intersection = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
+        # check if the point is above the minimum y coordinate of the edge
+        # check if the point is below the maximum y coordinate of the edge
+        # check if the point is to the left of the maximum x coordinate of the edge
+        if y > min(p1y, p2y) and y <= max(p1y, p2y) and x <= max(p1x, p2x):
+            # calculate the x-intersection of the line connecting the point to the edge
+            x_intersection = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
 
-                    # Check if the point is on the same line as the edge or to the left of the x-intersection
-                    if p1x == p2x or x <= x_intersection:
-                        # Flip the inside flag
-                        inside = not inside
+            # check if the point is on the same line as the edge or to the left of the x-intersection
+            if p1x == p2x or x <= x_intersection:
+                # flip the inside flag
+                inside = not inside
 
-        # Store the current point as the first point for the next iteration
+        # store the current point as the first point for the next iteration
         (p1x, p1y) = (p2x, p2y)
 
-    # Return the value of the inside flag
+    # return the value of the inside flag
     return inside
 
+# checks whether a blob is a cube or not based on the minimum height and density filters
+# as well as another check:
+# since in some light conditions the red the cube may be similar to the orange line or magenta parking walls
+# and in some light conditions the green the cube may be similar to the blue line
+# we have to check if the possible cube blob is inside any of these ones
+# if it is, then it may just be a false alarm and we should ignore it
 def is_cube(blob, line_blob, parking_blobs):
     if blob.density() >= density_thr and blob.h() > min_cube_height and not is_blob_in_blob(blob, line_blob):
         for parking_wall_blob in parking_blobs:
@@ -139,6 +147,7 @@ def is_cube(blob, line_blob, parking_blobs):
         return True
     return False
 
+# function that gets the biggest blob by size
 def get_biggest_blob(blob_array):
     max_area = 0
     max_blob = None
@@ -149,6 +158,7 @@ def get_biggest_blob(blob_array):
             max_blob = blob
     return max_blob
 
+# checks if a parking wall blob meets the height and size requirements
 def is_parking_wall(blob):
     if not blob:
         return False
@@ -254,9 +264,6 @@ while (True):
                 max_area = blob.area()
                 saved_cube = blob
                 color = 'red'
-#            if blob.density() >= density_thr:
-#                img.draw_rectangle(blob.rect())
-#                img.draw_cross(blob.cx(), blob.cy())
         for blob in green_blobs: # for every green blob
             # if they're passing the height and density filters
             # we're keeping the biggest one and its color
@@ -264,9 +271,6 @@ while (True):
                 max_area = blob.area()
                 saved_cube = blob
                 color = 'green'
-#            if blob.density() >= density_thr:
-#                img.draw_rectangle(blob.rect())
-#                img.draw_cross(blob.cx(), blob.cy())
 
         if saved_cube != None: # if we saw a cube
 #            img.draw_rectangle(saved_cube.rect())
@@ -310,10 +314,12 @@ while (True):
 #            print(str(direction))
         if is_parking_wall(parking_wall_blob):
             # if we saw the parking walls, send the parking trigger
-            img.draw_rectangle(parking_wall_blob.rect(), color=(0, 255, 0))
+#            img.draw_rectangle(parking_wall_blob.rect(), color=(0, 255, 0))
             uart.write('P\n')
 #            print('P\n')
         if wall_blobs:
+            # if the wall is big enough, send a slightly different message that helps us when parking
+            # if not, send the classic one
             if outer_wall.pixels() >= wall_roi_area and outer_wall.area() >= wall_roi_area:
                 uart.write('WP\n')
 #                print('WP\n')

@@ -55,12 +55,13 @@ int freq = 0;
 // hardcoded sequence that avoids a cube
 void pass_cube(int cube_last) {
   int angle_addition = 0;
-  if (cube_last == 1)
+  if (cube_last == 1) // due to a slight asymmetry in the steering, when avoiding red cubes we need to steer less
     angle_addition = -9;
   read_gyro(false);
   int start_angle = gx;
-  move_until_angle(MOTOR_SPEED, start_angle - cube_last * (AVOIDANCE_ANGLE + angle_addition));
-  if (abs(current_angle_gyro - start_angle) >= 10)
+  move_until_angle(MOTOR_SPEED, start_angle - cube_last * (AVOIDANCE_ANGLE + angle_addition)); // steer away from the cube
+  // gain some distance
+  if (abs(current_angle_gyro - start_angle) >= 10) // if we passed by it while crooked in regards to the goal line we need to overcompensate in order to see the next cube
     move_cm_gyro(16, MOTOR_SPEED, start_angle - cube_last * (AVOIDANCE_ANGLE + angle_addition));
   else
     move_cm_gyro(7, MOTOR_SPEED, start_angle - cube_last * (AVOIDANCE_ANGLE + angle_addition));
@@ -93,7 +94,7 @@ void execute(String cmd) {
       return;
 
     if (CASE == POSITION_BEFORE_FIND_PARKING && cmd[0] == 'W') { // if we're positioning ourselves close to the wall and we're in its proximity
-      move_until_angle(MOTOR_SPEED, current_angle_gyro);
+      move_until_angle(MOTOR_SPEED, current_angle_gyro); // straighten ourselves
       CASE = FIND_PARKING; // start searching for the parking lot
       return;
     }
@@ -150,7 +151,7 @@ void execute(String cmd) {
           move_cm_gyro(CORNER_DISTANCE_QUALI, MOTOR_SPEED, current_angle_gyro);
       }
       else if (CASE == AFTER_CUBE) { // if we're crooked after avoiding a cube we position ourselves for the turn
-        if (-cube_last == turn_direction) {
+        if (-cube_last == turn_direction) { // if we passed by it in the turn's direction then we just need to straighted ourselves for more manuver room
           move_until_angle(MOTOR_SPEED, current_angle_gyro);
         }
         else {
@@ -178,7 +179,7 @@ void check_and_execute_turnaround(double gx) {
     return;
   if (!TURNED && turns == 8 && cube_last == 1 && millis() - last_rotate > TURNAROUND_DELAY) { // may have to take out the time condition for any case except AFTER_CUBE
     move_until_angle(MOTOR_SPEED, current_angle_gyro + turn_direction * TURNAROUND_ANGLE);
-    if (-cube_last == turn_direction) {
+    if (-cube_last == turn_direction) { // if i avoided the cube on the inside, i don't have too much room
       move_cm_gyro(5, MOTOR_SPEED, current_angle_gyro + turn_direction * TURNAROUND_ANGLE); // position ourselves so that we have room to turn around
     }
     else {
@@ -232,7 +233,7 @@ void loop_function() {
         CASE = STOP_BEFORE_FIND_PARKING;
       }
       else {
-        if (millis() - last_follow_cube > FOLLOW_CUBE_DEAD_TIME)
+        if (millis() - last_follow_cube > FOLLOW_CUBE_DEAD_TIME) // if we lost the cube, we just go back to the default PID case
           CASE = PID;
         // write to the servo the pid computed on the camera in order to follow the cube
         move_servo(follow_cube_angle);
@@ -251,7 +252,7 @@ void loop_function() {
         if (abs(err) < 5) {
           // after we avoid the cube, move forward a bit more so that we're positioned
           // to see the next cube
-          if (cube_last == turn_direction)
+          if (cube_last == turn_direction) // compensate less on the inside
             move_cm_gyro(5, MOTOR_SPEED, current_angle_gyro + cube_last * CORRECTION_ANGLE);
           else
             move_cm_gyro(10, MOTOR_SPEED, current_angle_gyro + cube_last * CORRECTION_ANGLE);
@@ -277,6 +278,8 @@ void loop_function() {
     }
 
     case POSITION_BEFORE_FIND_PARKING: {
+      // classic pid on the gyro so that we can move perpendicular to the walls
+      // we don't just call the move_until_angle function so that we can still execute commands
       double err = current_angle_gyro - gx - turn_direction * 90;
       pid_error_gyro = (err) * kp_gyro + (pid_error_gyro - pid_last_error_gyro) * kd_gyro;
       pid_last_error_gyro = pid_error_gyro;
@@ -287,6 +290,7 @@ void loop_function() {
 
     case FIND_PARKING: {
       // classic pid on the gyro so that we can move straight
+      // basically immitating a quali run until we find the parking spot
       double err = current_angle_gyro - gx;
       pid_error_gyro = (err) * kp_gyro + (pid_error_gyro - pid_last_error_gyro) * kd_gyro;
       pid_last_error_gyro = pid_error_gyro;
@@ -297,6 +301,7 @@ void loop_function() {
 
     case POSITION_FOR_PARK: {
       // hardcoded sequence of moves that positions us in the parking spot
+      // after that, we just get closer to the outside wall so that we're fully in
       move_cm_gyro(10, PARKING_SPEED, current_angle_gyro);
       move_until_angle(PARKING_SPEED, current_angle_gyro + turn_direction * 90);
       move_until_angle(PARKING_SPEED, current_angle_gyro - turn_direction * 90);
@@ -306,6 +311,7 @@ void loop_function() {
 
     case PARK: {
       // classic pid on the gyro so that we can move straight into the parking space
+      // we don't just call the move_until_angle function so that we can still execute commands
       double err = current_angle_gyro - gx - turn_direction * 90;
       pid_error_gyro = (err) * kp_gyro + (pid_error_gyro - pid_last_error_gyro) * kd_gyro;
       pid_last_error_gyro = pid_error_gyro;

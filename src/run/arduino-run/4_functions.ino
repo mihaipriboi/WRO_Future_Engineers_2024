@@ -16,7 +16,8 @@ double map_double(double x, double in_min, double in_max, double out_min, double
   return (delta * rise) / run + out_min;
 }
 
-void flush_messages() {
+void flush_messages() { // flushing messages like this so that we don't get sections of messages
+  // improves the stability of the communication
   while (Serial0.available() > 0) { // if we have some characters waiting
     char receivedChar = Serial0.read(); // we get the first character
     if (receivedChar == '\n') { // if it's the end of message marker
