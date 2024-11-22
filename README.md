@@ -306,7 +306,7 @@ Where to buy the servo motor: https://cleste.ro/motor-servo-mg90s-180g.html
 
 Our previous attempts at designing a robot for the Future Engineers category were bulky and heavy, mostly lego based. This year, we aimed to create a more compact and lightweight robot. We achieved this by using a almost entirely 3D-printed chassis. Because of this, the fact that we tried to use as few components as possible, the robot is aproximately 50% lighter than last year's robot, while also being more compact.
 
-Another improvement we made was the way of connecting 3d pars togheter. Instead of using lego or screws, we used snapping joints and pins.
+Another improvement we made was the way of connecting 3D parts togheter. Instead of using lego or screws, we used snapping joints and pins.
 
 The chassis holds basically all of the components. Only the gearmotor and the gyroscope are attached to a separate piece that is then attached to the chassis. The back holds the differential; the middle part has a hole for the battery, on top of which the pcb is mounted using a 3d printed holder. The front holds the camera and the servo motor; the servo mount piece is attached to the chassis as well.
 
@@ -415,7 +415,7 @@ The Arduino, mounted on a prototype board, is secured to the chassis with a 3D-p
   </tr>
 </table>
 
-One importat aspect that helps the roboy navigate is the inertial measurement unit (IMU). This sensor is based on BOSCH BMI088, which is a high-performance IMU with high vibration suppression. While the IMU measure the angular velocity and the acceleration of the robot, we only use the angular velocity to calculate the angle of the robot. The IMU is wired to the SDA and SCL pins on the arduino.
+One importat aspect that helps the robot navigate is the inertial measurement unit (IMU). This sensor is based on BOSCH BMI088, which is a high-performance IMU with high vibration suppression. While the IMU measure the angular velocity and the acceleration of the robot, we only use the angular velocity to calculate the angle of the robot. The IMU is wired to the SDA and SCL pins on the arduino.
 
 Where to buy the gyro sensor: https://www.seeedstudio.com/Grove-6-Axis-Accelerometer-Gyroscope-BMI088.html
 
@@ -562,7 +562,7 @@ void motor_break(long long break_time) { // stop the robot for a given time
 
 However, for the encoder, we required a specialized library to handle the more complex signal processing. The library we use for interfacing with the encoder is called ```Encoder.h```.
 
-The encoder operates with a straightforward function that we found easy to comprehend and program. In order to determine the distance in cm, we divided the returned value by 12, since the encoder measures 12 counts per revolution. Then we multiplied this with the gear ratio, wheel diameter and pi. After that we divied by 10 to convert to cm.
+The encoder operates with a straightforward function that we found easy to comprehend and program. In order to determine the distance in cm, we divided the returned value by 12, since the encoder measures 12 counts per revolution. Then we multiplied this with the gear ratio, wheel diameter and Pi. After that we divided by 10 to convert to cm.
 
 Because of the way the ESP32 chip interacts with the components, in order for this library to properly work, we should select the pin numbering option as "by GPIO number", not as the default "by Arduino pin".
 
@@ -602,7 +602,7 @@ void servo_setup() {
 
 The servo motor is controlled dinamically in the loop by setting a goal angle and taking small steps towards that goal at every iteration. This way we make sure that we can send a lot of fast angle changes to the servo and get the wanted results.
 
-The function ```move_servo``` sets the goal angle to the given parameter angle. If the angle is negative the motor will rotate to the right, and if it is positive, the motor will rotate to left. This way, 0 is going to be the position in which the wheels are straight. Also, the values we are giving the motor need to be between -1 and 1, so we use a clamp function to limit the value we are going to give the motor to roatate to and an interval mapping function to map the parameter from the [-1; 1] interval to the [ANGLE_MIN; ANGLE_MAX] interval.
+The function ```move_servo``` sets the goal angle to the given parameter. If the angle is negative the motor will rotate to the right, and if it is positive, the motor will rotate to left. This way, 0 is going to be the position in which the wheels are straight. Also, the values given the motor need to be between -1 and 1, so we use a clamp function to limit the value we are going to give the motor to rotate to and an interval mapping function to map the parameter from the [-1; 1] interval to the [ANGLE_MIN; ANGLE_MAX] interval.
 
 The function ```update_servo``` takes a small step towards the goal angle as described above.
 
@@ -636,7 +636,7 @@ void loop() {
 
 ## Camera <a class="anchor" id="camera-code"></a>
 
-Now that we finished to implement the functions we need to make the robot move and steer, we have to make him see the lines that trigger the turns, the cubes and the parking walls and move accordingly. To communicate with the camera, we use the ```UART``` protocol. In order for this to work, we must link the ```RX0``` pin on the arduino (the receiver pin) to the ```P4``` pin on the camera (the transmitter pin) and the ```TX1``` pin on the arduino (the transmitter pin) to the ```P5``` pin on the camera (the receiver pin). In addition, the baud rates from the ```Serial0``` object on the arduino and the ```uart``` object on the camera must match.
+Now that we finished implementing the functions that we need to make the robot move and steer, we have to make it see the lines that trigger the turns, the cubes and the parking walls and move accordingly. To communicate with the camera, we use the ```UART``` protocol. In order for this to work, we must link the ```RX0``` pin on the arduino (the receiver pin) to the ```P4``` pin on the camera (the transmitter pin) and the ```TX1``` pin on the arduino (the transmitter pin) to the ```P5``` pin on the camera (the receiver pin). In addition, the baud rates from the ```Serial0``` object on the arduino and the ```uart``` object on the camera must match.
 
 **Arduino code:**
 
@@ -682,7 +682,7 @@ uart = UART(3, 19200)
 uart.write(msg)
 ```
 
-In order to detect colors, we have to take pictures in which to search for colors. This is the sequence that sets up the camera sensor. Due to the limitations of the sensor this camera has, we couldn't manually adjust the white balance, gain, exposure time or access the registries.
+In order to detect colors, we have to take pictures in which to search for colors. This is the sequence that sets up the camera sensor. Due to the limitations of the sensor, we couldn't manually adjust the white balance, gain, exposure time or access its registries.
 
 ```py
 import sensor
@@ -704,8 +704,9 @@ sensor.set_auto_exposure(False, exposure_us=10000) # set constant exposure for t
 sensor.skip_frames(time=2000)
 ```
 
-Now for the camera logic, the color tracking is pretty simple: the camera can return blobs of pixels that fit into a certain ```LAB``` threshold representing a color. We can also restrain the blob detection to a rectangle of interest and apply pixel count, bounding rectangle area and density filters as well. The reason for which we do this, is that certain colors, like green, red, blue and orange are pretty common, therefore we don't want the camera to interpret clothes or other objects outside of the map as obstacles. In addition, the orange and red colors, in some light conditions, are quite similar. This is why we apply the pixel count, bounding rectangle area and density filters, to ensure that we are seeing the correct object. Therefore, for quali we firstly scan the color of the first seen line. This will give us the direction of the run. Then, we constantly look out for lines that are over a certain area. Once we find one, we send the turn trigger to the Arduino via ```UART```.
-The color detection is the same for the cube and parking wall detection, therefore we'll explain only the code needed for quali.
+Now for the camera logic, the color tracking is pretty simple: the camera can return blobs of pixels that fit into a certain ```LAB``` threshold representing a color. We can also restrain the blob detection to a rectangle of interest and apply pixel count, bounding rectangle area and density filters as well. The reason for which we do this, is that certain colors, like green, red, blue and orange are pretty common, therefore we don't want the camera to interpret clothes or other objects outside of the map as obstacles. In addition, the orange and red colors, in some light conditions, are quite similar. This is why we apply the pixel count, bounding rectangle area and density filters, to ensure that we are seeing the correct object.
+
+For quali we firstly scan the color of the first seen line. This will give us the direction of the run. Then, we constantly look out for lines that are over a certain area. Once we find one, we send the turn trigger to the Arduino via ```UART```.
 
 ```py
 while (True):
@@ -770,7 +771,7 @@ while (True):
 
 ## IMU <a class="anchor" id="gyro-sensor-code"></a>
 
-To utilize the gyro sensor, we needed to include the ```_BMI088.h_``` library. During initialization, we allocate a 10-second window to measure the sensor's drift, allowing us to refine the robot's angular readings for greater precision. Additionally, we configure the sensor's output data rate to 400Hz and set the bandwidth to 47Hz. The bandwidth determines the frequency of data sampling by the sensor; a higher bandwidth yields more precise data at the cost of increased power consumption. We also designate pin 15 as an input and attach an interrupt to it, enabling us to capture data from the sensor as soon as it becomes available.
+To utilize the gyro sensor, we needed to include the ```BMI088.h``` library. During initialization, we allocate a 10-second window to measure the sensor's drift, allowing us to refine the robot's angular readings for greater precision. Additionally, we configure the sensor's output data rate to 400Hz and set the bandwidth to 47Hz. The bandwidth determines the frequency of data sampling by the sensor; a higher bandwidth yields more precise data at the cost of increased power consumption. We also designate pin A6 as an input and attach an interrupt to it, enabling us to capture data from the sensor as soon as it becomes available.
 
 ```ino
 void gyro_setup(bool debug) {
@@ -835,7 +836,7 @@ void gyro_setup(bool debug) {
 }
 ```
 
-Within the *read_gyro* function, we're retrieving data from the gyro sensor and adjusting it to account for any detected drift, enhancing the accuracy of the readings. Since the gyro provides data in radians, a conversion to degrees is necessary for our application. We're focusing solely on the rotation around the x-axis, hence we only compute the *gx* value, which represents the robot's angular rotation in degrees on that specific axis.
+Within the ```read_gyro``` function, we're retrieving data from the gyro sensor and adjusting it to account for any detected drift, enhancing the accuracy of the readings. Since the gyro provides data in radians, a conversion to degrees is necessary for our application. We're focusing solely on the rotation around the x-axis, hence we only compute the ```gx``` value, which represents the robot's angular rotation in degrees on that specific axis.
 
 ```ino
 void read_gyro(bool debug) {
@@ -870,7 +871,7 @@ void read_gyro(bool debug) {
 
 For the qualifying round, we set up a basic switch-case system to guide our robot. This system tells the robot what to do next, depending on where it is. The robot knows where it is by counting how many times it has turned.
 
-We use two main switch cases: ```PID```, and ```STOP_QUALI```.
+We use two main switch cases: ```PID``` and ```STOP_QUALI```.
 
 In the ```PID``` case, the robot moves straight and turns. It uses a special tool (PID controller) with a gyro sensor to stay on a straight line. If it sees a corner line, it gets a trigger from the camera to make a turn by adding 90 degrees to the goal angle.
 
@@ -1071,9 +1072,9 @@ void check_and_execute_turnaround(double gx) {
 }
 ```
 
-The final challenge in this round consists in parking the robot. The way we implement this is based on the quali. Basically we want to move as close to the outer walls as possible so that we're perfectly positioned for the parking and avoid all of the cubes. How we achieve this is by going perpendicular to the outside walls after we finish the obstacle round (see the ```POSITION_BEFORE_FIND_PARKING``` case). The goal is to position ourselves as close as possible to them. After we receive a trigger from the camera that we're in its proximity, we straighten ourselves out and start the basic quali code.
+The final challenge in this round consists in parking the robot. The way we implement this is based on the quali. Basically we want to move as close to the outer walls as possible so that we're perfectly positioned for the parking and avoid all of the cubes. How we achieve this is by going perpendicular to the outside walls after we finish the obstacle round (see the ```POSITION_BEFORE_FIND_PARKING``` case). The goal is to position ourselves as close as possible to them. After we receive a trigger from the camera saying that we're in its proximity, we straighten ourselves out and start the basic quali code.
 
-While moving around the map like this (in the ```FIND_PARKING``` case), we are constantly scanning for magenta blobs that represent the parking walls. When we detect them, we send a trigger from the camera to the arduino and then we have a hardcoded sequence that puts us between the walls, perfectly parallel to them, implemented in the ```POSITION_FOR_PARK``` case. After that, we move straight in order to get closer to the outer wall (see the ```PARK``` case). When we receive the trigger from the camera, we stop, move a couple of cm straight and stop the robot.
+While moving around the map like this (in the ```FIND_PARKING``` case), we are constantly scanning for magenta blobs that represent the parking walls. When we detect them, we send a trigger from the camera to the arduino and then we have a hardcoded sequence that puts us between the walls, perfectly parallel to them, implemented in the ```POSITION_FOR_PARK``` case. After that, we move straight in order to get closer to the outer wall (see the ```PARK``` case). When we receive the trigger from the camera, move a couple of cm straight and stop the robot.
 
 Camera code:
 
@@ -1466,7 +1467,7 @@ The part files can be found in the `3d-models` folder. We used and recommend the
 6. Inside the `steering hubs`, place a `Pin Connector Block`(<a href="https://www.bricklink.com/v2/catalog/catalogitem.page?P=39793&idColor=11#T=C&C=11">39793</a>) using pins. Put a `Axle 3L with Stop`(<a href="https://www.bricklink.com/v2/catalog/catalogitem.page?P=24316&idColor=11#T=C&C=11">24316</a>) inside the `Pin Connector Block`.
 
 ## Step 2: Assemble the powertrain <a class="anchor" id="powertrain-assembly"></a>
-lugen the `chassis` using the peg joints.
+1. Attach the `motor support` to the `chassis` using the peg joints.
 
 2. Attach the `motor` to the `motor support` using the `motor mounts` and *M3* screws.
 
