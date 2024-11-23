@@ -30,16 +30,16 @@ double follow_cube_angle = 0;
 // -----Distances-----
 #define CORNER_DISTANCE_FINAL 0
 #define CORNER_DISTANCE_QUALI 42 // maybe 40 if the battery is overcharged
-#define CORNER_DISTANCE_PARKING 48
+#define CORNER_DISTANCE_PARKING 52
 
 // -----Velocities-----
 #define MOTOR_SPEED 100
 #define PARKING_SPEED 70
 
 // -----Times-----
-#define TURNAROUND_DELAY 1400
+#define TURNAROUND_DELAY 1700
 #define FIRST_STOP_DELAY 1500
-#define FOLLOW_CUBE_DEAD_TIME 200
+#define FOLLOW_CUBE_DEAD_TIME 250
 
 // -----Logic-----
 int turn_direction = 0;
@@ -47,6 +47,7 @@ int delay_walls = 250;
 int cube_last = 0;
 int turns = 0;
 long last_follow_cube = 0;
+bool turn_around = false;
 
 // -----Debug-----
 long last_gyro_read = 0;
@@ -55,16 +56,24 @@ int freq = 0;
 // hardcoded sequence that avoids a cube
 void pass_cube(int cube_last) {
   int angle_addition = 0;
-  if (cube_last == 1) // due to a slight asymmetry in the steering, when avoiding red cubes we need to steer less
-    angle_addition = -9;
   read_gyro(false);
-  int start_angle = gx;
+  double start_angle = gx;
+  if (cube_last == 1) { // due to a slight asymmetry in the steering, when avoiding red cubes we need to steer less
+    angle_addition = -2;
+    if(abs(current_angle_gyro - start_angle) >= 12) // if we're crooked, dinamically adjust the avoidance angle so that we don't overshoot
+      angle_addition += -1 * abs(current_angle_gyro - start_angle) / 2.5;
+  }
+  else if(abs(current_angle_gyro - start_angle) >= 12) // if we're crooked, dinamically adjust the avoidance angle so that we don't overshoot
+    angle_addition = -1 * abs(current_angle_gyro - start_angle) / 3;
   move_until_angle(MOTOR_SPEED, start_angle - cube_last * (AVOIDANCE_ANGLE + angle_addition)); // steer away from the cube
   // gain some distance
   if (abs(current_angle_gyro - start_angle) >= 10) // if we passed by it while crooked in regards to the goal line we need to overcompensate in order to see the next cube
-    move_cm_gyro(16, MOTOR_SPEED, start_angle - cube_last * (AVOIDANCE_ANGLE + angle_addition));
+    move_cm_gyro(14, MOTOR_SPEED, start_angle - cube_last * (AVOIDANCE_ANGLE + angle_addition));
   else
     move_cm_gyro(7, MOTOR_SPEED, start_angle - cube_last * (AVOIDANCE_ANGLE + angle_addition));
+  if (cube_last == 1) // due to a slight asymmetry in the steering, when avoiding red cubes we need to steer less
+    angle_addition = -5;
+  move_cm_gyro(30, MOTOR_SPEED, current_angle_gyro + cube_last * (CORRECTION_ANGLE + angle_addition));
   CASE = AFTER_CUBE;
 }
 
@@ -100,7 +109,7 @@ void execute(String cmd) {
     }
 
     if (CASE == PARK && (cmd[0] == 'W' && cmd[1] == 'P')) { // if we're positioning ourselves close to the wall and we're in its proximity
-      move_cm_gyro(2, PARKING_SPEED, current_angle_gyro - turn_direction * 90); // position ourselves closer
+      move_cm_gyro(2.75, PARKING_SPEED, current_angle_gyro - turn_direction * 90); // position ourselves closer
       CASE = STOP_FINAL; // we finished the parking, stop
       return;
     }
@@ -139,11 +148,16 @@ void execute(String cmd) {
       }
     }
     if (millis() - last_rotate > delay_walls) { // if we can make a turn
+      if (turn_around) {
+        execute_turnaround();
+        last_rotate = millis(); // update the last time we turned
+        return;
+      }
       if (CASE == FIND_PARKING) { // if we're searching for the parking spot
         // if we're at the first turn, we have to move more in order to position ourselves close to the outer walls
         move_cm_gyro(CORNER_DISTANCE_PARKING, MOTOR_SPEED, current_angle_gyro);
       }
-      else if (0 < (current_angle_gyro - gx) * turn_direction && (current_angle_gyro - gx) * turn_direction < 10) { // if we're during the obstacle round or in the quali and we're straight
+      else if (abs(current_angle_gyro - gx) < 10) { // if we're during the obstacle round or in the quali and we're straight
         // position ourselves in order to not hit the walls
         if (FINAL)
           move_cm_gyro(CORNER_DISTANCE_FINAL, MOTOR_SPEED, current_angle_gyro);
@@ -162,14 +176,33 @@ void execute(String cmd) {
       }
       current_angle_gyro += turn_direction * 90; // update the goal angle for the next sequence
       turns++; // increase the number of turns made
-      delay_walls = 2500; // larger delay for every turn except the first one
+      delay_walls = 2300; // larger delay for every turn except the first one
       // as we may have the starting position close to the first turn
       last_rotate = millis(); // update the last time we turned
     }
   }
 }
 
-void check_and_execute_turnaround(double gx) {
+void execute_turnaround() {
+  read_gyro(false);
+  double starting_angle = gx;
+  // if ((current_angle_gyro - starting_angle) * turn_direction <= 20 * turn_direction) { // if i'm on the inside, i don't have too much room
+  //   move_cm_gyro(0, MOTOR_SPEED, current_angle_gyro + turn_direction * TURNAROUND_ANGLE); // position ourselves so that we have room to turn around
+  // }
+  // else {
+  //   move_until_angle(MOTOR_SPEED, current_angle_gyro + turn_direction * TURNAROUND_ANGLE);
+  //   move_cm_gyro(25, MOTOR_SPEED, current_angle_gyro + turn_direction * TURNAROUND_ANGLE); // position ourselves so that we have room to turn around
+  // }
+  drift(MOTOR_SPEED, -1, current_angle_gyro - 80);
+  turn_direction *= -1;
+  current_angle_gyro += 180;
+  drift(MOTOR_SPEED, 1, current_angle_gyro + turn_direction * TURNAROUND_ANGLE);
+  TURNED = true;
+  turn_around = false;
+  CASE = PID;
+}
+
+void check_for_turnaround() {
   // if we didn't do the turnaround yet
   // and we did 2 runs of the map
   // and the last seen cube is red
@@ -177,19 +210,8 @@ void check_and_execute_turnaround(double gx) {
   // (so that we can see the first cube in the starting sequence in case this sequence had 2 cubes and we spawned between them)
   if (!FINAL)
     return;
-  if (!TURNED && turns == 8 && cube_last == 1 && millis() - last_rotate > TURNAROUND_DELAY) { // may have to take out the time condition for any case except AFTER_CUBE
-    move_until_angle(MOTOR_SPEED, current_angle_gyro + turn_direction * TURNAROUND_ANGLE);
-    if (-cube_last == turn_direction) { // if i avoided the cube on the inside, i don't have too much room
-      move_cm_gyro(5, MOTOR_SPEED, current_angle_gyro + turn_direction * TURNAROUND_ANGLE); // position ourselves so that we have room to turn around
-    }
-    else {
-      move_cm_gyro(17, MOTOR_SPEED, current_angle_gyro + turn_direction * TURNAROUND_ANGLE); // position ourselves so that we have room to turn around
-    }
-    turn_direction *= -1;
-    current_angle_gyro += turn_direction * 180;
-    move_until_angle(MOTOR_SPEED, current_angle_gyro + turn_direction * TURNAROUND_ANGLE);
-    TURNED = true;
-    CASE = PID;
+  if (!TURNED && turns == 8 && cube_last == 1 && millis() - last_rotate > TURNAROUND_DELAY) {
+    turn_around = true;
   }
 }
 
@@ -207,7 +229,7 @@ void loop_function() {
   switch(CASE) {
 
     case PID: {
-      check_and_execute_turnaround(gx);
+      check_for_turnaround();
       double err = current_angle_gyro - gx;
       if (millis() - last_rotate > FIRST_STOP_DELAY && turns >= 12) { // if we did 3 runs of the round
         if (FINAL) {
@@ -228,7 +250,7 @@ void loop_function() {
     }
 
     case FOLLOW_CUBE: {
-      check_and_execute_turnaround(gx);
+      check_for_turnaround();
       if (millis() - last_rotate > FIRST_STOP_DELAY && turns >= 12) { // if we did 3 runs of the obstacle round, we need to stop and search for the parking
         CASE = STOP_BEFORE_FIND_PARKING;
       }
@@ -243,19 +265,22 @@ void loop_function() {
     }
 
     case AFTER_CUBE: {
-      check_and_execute_turnaround(gx);
+      check_for_turnaround();
       if (millis() - last_rotate > FIRST_STOP_DELAY && turns >= 12) { // if we did 3 runs of the obstacle round, we need to stop and search for the parking
         CASE = STOP_BEFORE_FIND_PARKING;
       }
       else {
-        double err = current_angle_gyro - gx + cube_last * CORRECTION_ANGLE;
+        int angle_addition = 0;
+        if (cube_last == 1) // due to a slight asymmetry in the steering, when avoiding red cubes we need to steer less
+          angle_addition = -9;
+        double err = current_angle_gyro - gx + cube_last * (CORRECTION_ANGLE + angle_addition);
         if (abs(err) < 5) {
           // after we avoid the cube, move forward a bit more so that we're positioned
           // to see the next cube
           if (cube_last == turn_direction) // compensate less on the inside
-            move_cm_gyro(5, MOTOR_SPEED, current_angle_gyro + cube_last * CORRECTION_ANGLE);
+            move_cm_gyro(5, MOTOR_SPEED, current_angle_gyro + cube_last * (CORRECTION_ANGLE + angle_addition));
           else
-            move_cm_gyro(10, MOTOR_SPEED, current_angle_gyro + cube_last * CORRECTION_ANGLE);
+            move_cm_gyro(10, MOTOR_SPEED, current_angle_gyro + cube_last * (CORRECTION_ANGLE + angle_addition));
           CASE = PID;
         }
         else {
@@ -272,6 +297,7 @@ void loop_function() {
 
     case STOP_BEFORE_FIND_PARKING: {
       // straighten ourselves, start searching for the parking
+      move_cm_gyro(20, MOTOR_SPEED, current_angle_gyro);
       motor_break(1000);
       CASE = POSITION_BEFORE_FIND_PARKING;
       break;
@@ -302,8 +328,9 @@ void loop_function() {
     case POSITION_FOR_PARK: {
       // hardcoded sequence of moves that positions us in the parking spot
       // after that, we just get closer to the outside wall so that we're fully in
-      move_cm_gyro(10, PARKING_SPEED, current_angle_gyro);
+      move_cm_gyro(14, PARKING_SPEED, current_angle_gyro);
       move_until_angle(PARKING_SPEED, current_angle_gyro + turn_direction * 90);
+      move_cm_gyro(3, -PARKING_SPEED, current_angle_gyro + turn_direction * 90);
       move_until_angle(PARKING_SPEED, current_angle_gyro - turn_direction * 90);
       CASE = PARK;
       break;

@@ -51,6 +51,7 @@ void servo_setup() {
   custom_delay(500);
   // Serial.println("after ANGLE_MID");
   goal_deg = ANGLE_MID;
+  custom_delay(2000); // some time to get rid of any unwanted movements so we don't disturb the gyro
 }
 
 void move_motor(double speed) {  // move the motor with a given speed in the [-100, 100] interval
@@ -141,6 +142,20 @@ void move_cm_gyro(double dis, double speed, double gyro_offset) {
     pid_error_gyro = (err) * kp_gyro + (pid_error_gyro - pid_last_error_gyro) * kd_gyro;
     pid_last_error_gyro = pid_error_gyro;
     move_servo(pid_error_gyro * sign);
+    update_servo();
+    move_motor(speed);
+    flush_messages();
+  }
+}
+
+// makes the robot move at a certain steering angle until it reaches a certain gyro angle
+void drift(double speed, double steering, double gyro_offset) {
+  read_gyro(false);
+  double err = gyro_offset - gx;
+  while (abs(err) >= 10) { // while the error is too big
+    read_gyro(false);
+    err = gyro_offset - gx;
+    move_servo(steering);
     update_servo();
     move_motor(speed);
     flush_messages();

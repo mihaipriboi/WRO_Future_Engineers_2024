@@ -66,11 +66,11 @@ wall_roi = (0, int(img.height() / 3 + 10), img.width(), int(img.height() * 2 / 3
 wall_roi_area = wall_roi[2] * wall_roi[3]
 
 # restrains values
-min_cube_height = 3
-min_cube_size = 35
-max_cube_size_red = 400 # 400
-max_cube_size_green = 300 # 300
-wall_blob_size = 4900
+min_cube_height = 5
+min_cube_size = 50
+max_cube_size_red = 330 # 400
+max_cube_size_green = 290 # 300
+wall_blob_size = 4600
 
 line_blob_size = 350
 parking_blob_height_trigger = 10
@@ -162,9 +162,7 @@ def get_biggest_blob(blob_array):
 def is_parking_wall(blob):
     if not blob:
         return False
-    if blob.pixels() >= parking_blob_size_trigger and blob.area() >= parking_blob_size_trigger:
-        return True
-    if blob.h() >= parking_blob_height_trigger:
+    if blob.pixels() >= parking_blob_size_trigger and blob.area() >= parking_blob_size_trigger and blob.h() >= parking_blob_height_trigger:
         return True
     return False
 
@@ -238,7 +236,7 @@ while (True):
     if FINAL: # if we're running the code for the final challenge
         # find the coloured blobs corresponding to the cubes
         red_blobs = img.find_blobs(red_threshold, roi=cubes_roi, pixels_threshold=min_cube_size, area_threshold=min_cube_size, merge=True)
-        green_blobs = img.find_blobs(green_threshold, roi=cubes_roi, pixels_threshold=min_cube_size, area_threshold=min_cube_size, merge=True)
+        green_blobs = img.find_blobs(green_threshold, roi=cubes_roi, pixels_threshold=min_cube_size - 15, area_threshold=min_cube_size - 15, merge=True)
 
         # find the coloured blobs corresponding to the parking walls
         parking_blobs = img.find_blobs(parking_threshold, roi=parking_roi, pixels_threshold=parking_blob_size_min, area_threshold=parking_blob_size_min, merge=True)

@@ -37,6 +37,7 @@ void setup_function() {
   motor_driver_setup(); // must be motor driver setup first and then servo setup
   servo_setup();
 
+  blink_led(LED_BUILTIN, 500);
   gyro_setup(true);
 
   // turn on debugging leds so that we know the setup is complete
