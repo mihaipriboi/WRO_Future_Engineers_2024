@@ -1591,8 +1591,9 @@ The part files can be found in the `3d-models` folder. We used and recommend the
 | 3D Printing            | 27.56     |
 | Other Parts Tested      | 150.00    |
 | Tools and Equipment    | 1,193.00  |
+| Shipping Approximation | 80.00     |
 
-**Grand Total:** **€1,571.56**
+**Grand Total:** **€1,651.56**
 
 ---
 
