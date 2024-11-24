@@ -73,7 +73,7 @@ void pass_cube(int cube_last) {
     move_cm_gyro(7, MOTOR_SPEED, start_angle - cube_last * (AVOIDANCE_ANGLE + angle_addition));
   if (cube_last == 1) // due to a slight asymmetry in the steering, when avoiding red cubes we need to steer less
     angle_addition = -5;
-  move_cm_gyro(30, MOTOR_SPEED, current_angle_gyro + cube_last * (CORRECTION_ANGLE + angle_addition));
+  move_cm_gyro(30, MOTOR_SPEED, current_angle_gyro + cube_last * (CORRECTION_ANGLE + angle_addition)); // go a bit in the other direction so that we can see the next cube
   CASE = AFTER_CUBE;
 }
 

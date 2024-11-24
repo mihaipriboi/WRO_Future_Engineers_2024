@@ -597,6 +597,7 @@ void servo_setup() {
   custom_delay(500);
   // Serial.println("after ANGLE_MID");
   goal_deg = ANGLE_MID;
+  custom_delay(2000); // some time to get rid of any unwanted movements so we don't disturb the gyro
 }
 ```
 
@@ -877,7 +878,7 @@ In the ```PID``` case, the robot moves straight and turns. It uses a special too
 
 ```ino
 case PID: {
-  check_and_execute_turnaround(gx);
+  check_for_turnaround();
   double err = current_angle_gyro - gx;
   if (millis() - last_rotate > FIRST_STOP_DELAY && turns >= 12) { // if we did 3 runs of the round
     if (FINAL) {
@@ -920,7 +921,7 @@ img = sensor.snapshot()
 
 # find the coloured blobs corresponding to the cubes
 red_blobs = img.find_blobs(red_threshold, roi=cubes_roi, pixels_threshold=min_cube_size, area_threshold=min_cube_size, merge=True)
-green_blobs = img.find_blobs(green_threshold, roi=cubes_roi, pixels_threshold=min_cube_size, area_threshold=min_cube_size, merge=True)
+green_blobs = img.find_blobs(green_threshold, roi=cubes_roi, pixels_threshold=min_cube_size - 15, area_threshold=min_cube_size - 15, merge=True)
 
 msg = "0\n"
 max_area = 0
@@ -985,23 +986,31 @@ The arduino part is quite simple, consisting of the quali switch but with two ex
 // hardcoded sequence that avoids a cube
 void pass_cube(int cube_last) {
   int angle_addition = 0;
-  if (cube_last == 1) // due to a slight asymmetry in the steering, when avoiding red cubes we need to steer less
-    angle_addition = -9;
   read_gyro(false);
-  int start_angle = gx;
+  double start_angle = gx;
+  if (cube_last == 1) { // due to a slight asymmetry in the steering, when avoiding red cubes we need to steer less
+    angle_addition = -2;
+    if(abs(current_angle_gyro - start_angle) >= 12) // if we're crooked, dinamically adjust the avoidance angle so that we don't overshoot
+      angle_addition += -1 * abs(current_angle_gyro - start_angle) / 2.5;
+  }
+  else if(abs(current_angle_gyro - start_angle) >= 12) // if we're crooked, dinamically adjust the avoidance angle so that we don't overshoot
+    angle_addition = -1 * abs(current_angle_gyro - start_angle) / 3;
   move_until_angle(MOTOR_SPEED, start_angle - cube_last * (AVOIDANCE_ANGLE + angle_addition)); // steer away from the cube
   // gain some distance
   if (abs(current_angle_gyro - start_angle) >= 10) // if we passed by it while crooked in regards to the goal line we need to overcompensate in order to see the next cube
-    move_cm_gyro(16, MOTOR_SPEED, start_angle - cube_last * (AVOIDANCE_ANGLE + angle_addition));
+    move_cm_gyro(14, MOTOR_SPEED, start_angle - cube_last * (AVOIDANCE_ANGLE + angle_addition));
   else
     move_cm_gyro(7, MOTOR_SPEED, start_angle - cube_last * (AVOIDANCE_ANGLE + angle_addition));
+  if (cube_last == 1) // due to a slight asymmetry in the steering, when avoiding red cubes we need to steer less
+    angle_addition = -5;
+  move_cm_gyro(30, MOTOR_SPEED, current_angle_gyro + cube_last * (CORRECTION_ANGLE + angle_addition)); // go a bit in the other direction so that we can see the next cube
   CASE = AFTER_CUBE;
 }
 ```
 
 ```ino
 case FOLLOW_CUBE: {
-  check_and_execute_turnaround(gx);
+  check_for_turnaround();
   if (millis() - last_rotate > FIRST_STOP_DELAY && turns >= 12) { // if we did 3 runs of the obstacle round, we need to stop and search for the parking
     CASE = STOP_BEFORE_FIND_PARKING;
   }
@@ -1016,19 +1025,22 @@ case FOLLOW_CUBE: {
 }
 
 case AFTER_CUBE: {
-  check_and_execute_turnaround(gx);
+  check_for_turnaround();
   if (millis() - last_rotate > FIRST_STOP_DELAY && turns >= 12) { // if we did 3 runs of the obstacle round, we need to stop and search for the parking
     CASE = STOP_BEFORE_FIND_PARKING;
   }
   else {
-    double err = current_angle_gyro - gx + cube_last * CORRECTION_ANGLE;
+    int angle_addition = 0;
+    if (cube_last == 1) // due to a slight asymmetry in the steering, when avoiding red cubes we need to steer less
+      angle_addition = -9;
+    double err = current_angle_gyro - gx + cube_last * (CORRECTION_ANGLE + angle_addition);
     if (abs(err) < 5) {
       // after we avoid the cube, move forward a bit more so that we're positioned
       // to see the next cube
       if (cube_last == turn_direction) // compensate less on the inside
-        move_cm_gyro(5, MOTOR_SPEED, current_angle_gyro + cube_last * CORRECTION_ANGLE);
+        move_cm_gyro(5, MOTOR_SPEED, current_angle_gyro + cube_last * (CORRECTION_ANGLE + angle_addition));
       else
-        move_cm_gyro(10, MOTOR_SPEED, current_angle_gyro + cube_last * CORRECTION_ANGLE);
+        move_cm_gyro(10, MOTOR_SPEED, current_angle_gyro + cube_last * (CORRECTION_ANGLE + angle_addition));
       CASE = PID;
     }
     else {
@@ -1044,10 +1056,10 @@ case AFTER_CUBE: {
 }
 ```
 
-The next challenge in this round consists in the final turnaround. If the last seen cube is red, we need to do a roundabout and complete the last lap in the opposite direction. The way we deal with this is a function that checks if we should turn around and executes it if necessary. This function is called in the ```PID```, ```FOLLOW_CUBE``` and ```AFTER_CUBE``` cases.
+The next challenge in this round consists in the final turnaround. If the last seen cube is red, we need to do a roundabout and complete the last lap in the opposite direction. The way we deal with this is a function that checks if we should turn around and executes it if necessary. This function is called in the ```PID```, ```FOLLOW_CUBE``` and ```AFTER_CUBE``` cases. In order to make sure that at the turnaround we don't hit any obstacles, we wait until the next corner in order to have room for the manuver. To do this, when we want to do the turnaround, we set a global flag to ```true```, and when we want to execute a turn, we turnaround and set the flag to its initial value, ```false```, so that we won't repeat the manuver.
 
 ```ino
-void check_and_execute_turnaround(double gx) {
+void check_for_turnaround() {
   // if we didn't do the turnaround yet
   // and we did 2 runs of the map
   // and the last seen cube is red
@@ -1055,20 +1067,21 @@ void check_and_execute_turnaround(double gx) {
   // (so that we can see the first cube in the starting sequence in case this sequence had 2 cubes and we spawned between them)
   if (!FINAL)
     return;
-  if (!TURNED && turns == 8 && cube_last == 1 && millis() - last_rotate > TURNAROUND_DELAY) { // may have to take out the time condition for any case except AFTER_CUBE
-    move_until_angle(MOTOR_SPEED, current_angle_gyro + turn_direction * TURNAROUND_ANGLE);
-    if (-cube_last == turn_direction) { // if i avoided the cube on the inside, i don't have too much room
-      move_cm_gyro(5, MOTOR_SPEED, current_angle_gyro + turn_direction * TURNAROUND_ANGLE); // position ourselves so that we have room to turn around
-    }
-    else {
-      move_cm_gyro(17, MOTOR_SPEED, current_angle_gyro + turn_direction * TURNAROUND_ANGLE); // position ourselves so that we have room to turn around
-    }
-    turn_direction *= -1;
-    current_angle_gyro += turn_direction * 180;
-    move_until_angle(MOTOR_SPEED, current_angle_gyro + turn_direction * TURNAROUND_ANGLE);
-    TURNED = true;
-    CASE = PID;
+  if (!TURNED && turns == 8 && cube_last == 1 && millis() - last_rotate > TURNAROUND_DELAY) {
+    turn_around = true;
   }
+}
+
+void execute_turnaround() {
+  read_gyro(false);
+  double starting_angle = gx;
+  drift(MOTOR_SPEED, -1, current_angle_gyro - 80);
+  turn_direction *= -1;
+  current_angle_gyro += 180;
+  drift(MOTOR_SPEED, 1, current_angle_gyro + turn_direction * TURNAROUND_ANGLE);
+  TURNED = true;
+  turn_around = false;
+  CASE = PID;
 }
 ```
 
@@ -1079,6 +1092,14 @@ While moving around the map like this (in the ```FIND_PARKING``` case), we are c
 Camera code:
 
 ```py
+# checks if a parking wall blob meets the height and size requirements
+def is_parking_wall(blob):
+    if not blob:
+        return False
+    if blob.pixels() >= parking_blob_size_trigger and blob.area() >= parking_blob_size_trigger and blob.h() >= parking_blob_height_trigger:
+        return True
+    return False
+
 # find the coloured blobs corresponding to the parking walls
 parking_blobs = img.find_blobs(parking_threshold, roi=parking_roi, pixels_threshold=parking_blob_size_min, area_threshold=parking_blob_size_min, merge=True)
 parking_wall_blob = get_biggest_blob(parking_blobs)
@@ -1109,6 +1130,7 @@ if wall_blobs:
 ```ino
 case STOP_BEFORE_FIND_PARKING: {
   // straighten ourselves, start searching for the parking
+  move_cm_gyro(20, MOTOR_SPEED, current_angle_gyro);
   motor_break(1000);
   CASE = POSITION_BEFORE_FIND_PARKING;
   break;
@@ -1139,8 +1161,9 @@ case FIND_PARKING: {
 case POSITION_FOR_PARK: {
   // hardcoded sequence of moves that positions us in the parking spot
   // after that, we just get closer to the outside wall so that we're fully in
-  move_cm_gyro(10, PARKING_SPEED, current_angle_gyro);
+  move_cm_gyro(14, PARKING_SPEED, current_angle_gyro);
   move_until_angle(PARKING_SPEED, current_angle_gyro + turn_direction * 90);
+  move_cm_gyro(3, -PARKING_SPEED, current_angle_gyro + turn_direction * 90);
   move_until_angle(PARKING_SPEED, current_angle_gyro - turn_direction * 90);
   CASE = PARK;
   break;
@@ -1234,6 +1257,20 @@ void move_cm_gyro(double dis, double speed, double gyro_offset) {
     flush_messages();
   }
 }
+
+// makes the robot move at a certain steering angle until it reaches a certain gyro angle
+void drift(double speed, double steering, double gyro_offset) {
+  read_gyro(false);
+  double err = gyro_offset - gx;
+  while (abs(err) >= 10) { // while the error is too big
+    read_gyro(false);
+    err = gyro_offset - gx;
+    move_servo(steering);
+    update_servo();
+    move_motor(speed);
+    flush_messages();
+  }
+}
 ```
 
 Lastly, we receive multiple types of commands from the camera, from different triggers, to cube following and avoiding commands. All of these take various forms, therefore we need a function that parses every command and executes it. This is where the ```execute``` and ```valid_command``` functions come in handy. The ```execute``` function executes the command only if the ```valid_command``` function says it's valid.
@@ -1285,7 +1322,7 @@ void execute(String cmd) {
     }
 
     if (CASE == PARK && (cmd[0] == 'W' && cmd[1] == 'P')) { // if we're positioning ourselves close to the wall and we're in its proximity
-      move_cm_gyro(2, PARKING_SPEED, current_angle_gyro - turn_direction * 90); // position ourselves closer
+      move_cm_gyro(2.75, PARKING_SPEED, current_angle_gyro - turn_direction * 90); // position ourselves closer
       CASE = STOP_FINAL; // we finished the parking, stop
       return;
     }
@@ -1324,11 +1361,16 @@ void execute(String cmd) {
       }
     }
     if (millis() - last_rotate > delay_walls) { // if we can make a turn
+      if (turn_around) {
+        execute_turnaround();
+        last_rotate = millis(); // update the last time we turned
+        return;
+      }
       if (CASE == FIND_PARKING) { // if we're searching for the parking spot
         // if we're at the first turn, we have to move more in order to position ourselves close to the outer walls
         move_cm_gyro(CORNER_DISTANCE_PARKING, MOTOR_SPEED, current_angle_gyro);
       }
-      else if (0 < (current_angle_gyro - gx) * turn_direction && (current_angle_gyro - gx) * turn_direction < 10) { // if we're during the obstacle round or in the quali and we're straight
+      else if (abs(current_angle_gyro - gx) < 10) { // if we're during the obstacle round or in the quali and we're straight
         // position ourselves in order to not hit the walls
         if (FINAL)
           move_cm_gyro(CORNER_DISTANCE_FINAL, MOTOR_SPEED, current_angle_gyro);
@@ -1347,7 +1389,7 @@ void execute(String cmd) {
       }
       current_angle_gyro += turn_direction * 90; // update the goal angle for the next sequence
       turns++; // increase the number of turns made
-      delay_walls = 2500; // larger delay for every turn except the first one
+      delay_walls = 2300; // larger delay for every turn except the first one
       // as we may have the starting position close to the first turn
       last_rotate = millis(); // update the last time we turned
     }
@@ -1426,16 +1468,6 @@ def get_biggest_blob(blob_array):
             max_area = blob.area()
             max_blob = blob
     return max_blob
-
-# checks if a parking wall blob meets the height and size requirements
-def is_parking_wall(blob):
-    if not blob:
-        return False
-    if blob.pixels() >= parking_blob_size_trigger and blob.area() >= parking_blob_size_trigger:
-        return True
-    if blob.h() >= parking_blob_height_trigger:
-        return True
-    return False
 ```
 
 <br>
