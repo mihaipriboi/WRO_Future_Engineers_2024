@@ -23,16 +23,28 @@ uart = UART(3, 19200)
 # 3 - the uart config, meaning that we use pins P4 as the transmitter, P5 as the receiver
 # 19200 - baud rate aka frequency, must match the one set up on the arduino
 
+# logic
+direction = 0
+FINAL = True
+
 red_led = LED(1)
 green_led = LED(2)
 blue_led = LED(3)
 
-green_led.on()
-blue_led.on()
-time.sleep(0.5)
-green_led.off()
-blue_led.off()
-time.sleep(0.5) # blink led with a cyan color so that we know the camera is ready
+if FINAL:
+    green_led.on()
+    blue_led.on()
+    time.sleep(0.5)
+    green_led.off()
+    blue_led.off()
+    time.sleep(0.5) # blink led with a cyan color so that we know the camera is ready and running the final code
+else:
+    green_led.on()
+    red_led.on()
+    time.sleep(0.5)
+    green_led.off()
+    red_led.off()
+    time.sleep(0.5) # blink led with a yellow color so that we know the camera is ready and running the quali code
 
 # threshold values
 
@@ -82,10 +94,6 @@ density_thr = 0.7 # 0.6
 kp = 0.0033  # 0.0033
 kd = 0.033   # 0.033
 err_old = 0
-
-# logic
-direction = 0
-FINAL = True
 
 # force the val into the [min_intv, max_intv] interval
 def clamp(val, min_intv, max_intv):

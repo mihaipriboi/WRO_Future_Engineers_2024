@@ -4,6 +4,8 @@
 #include <Wire.h>
 #include "BMI088.h"
 
+#define FINAL true
+
 // -----Button and Debug led-----
 #define BTN_PIN A3
 #define DEBUG_LED D12

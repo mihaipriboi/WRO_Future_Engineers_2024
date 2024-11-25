@@ -4,8 +4,6 @@
 // The time is in ms
 // The angles are in degrees
 
-#define FINAL true
-
 // -----Cases-----
 #define PID 0
 #define FOLLOW_CUBE 1
@@ -55,25 +53,23 @@ int freq = 0;
 
 // hardcoded sequence that avoids a cube
 void pass_cube(int cube_last) {
-  int angle_addition = 0;
+  double angle_addition = 0;
   read_gyro(false);
   double start_angle = gx;
+  double err = abs(current_angle_gyro - start_angle);
   if (cube_last == 1) { // due to a slight asymmetry in the steering, when avoiding red cubes we need to steer less
     angle_addition = -2;
-    if(abs(current_angle_gyro - start_angle) >= 12) // if we're crooked, dinamically adjust the avoidance angle so that we don't overshoot
-      angle_addition += -1 * abs(current_angle_gyro - start_angle) / 2.5;
+    if(err >= 12) // if we're crooked, dinamically adjust the avoidance angle so that we don't overshoot
+      angle_addition += -1 * err / 2.5;
   }
-  else if(abs(current_angle_gyro - start_angle) >= 12) // if we're crooked, dinamically adjust the avoidance angle so that we don't overshoot
-    angle_addition = -1 * abs(current_angle_gyro - start_angle) / 3;
+  else if (err >= 12) // if we're crooked, dinamically adjust the avoidance angle so that we don't overshoot
+    angle_addition = -1 * err / 3;
   move_until_angle(MOTOR_SPEED, start_angle - cube_last * (AVOIDANCE_ANGLE + angle_addition)); // steer away from the cube
   // gain some distance
-  if (abs(current_angle_gyro - start_angle) >= 10) // if we passed by it while crooked in regards to the goal line we need to overcompensate in order to see the next cube
+  if (err >= 10) // if we passed by it while crooked in regards to the goal line we need to overcompensate in order to see the next cube
     move_cm_gyro(14, MOTOR_SPEED, start_angle - cube_last * (AVOIDANCE_ANGLE + angle_addition));
   else
     move_cm_gyro(7, MOTOR_SPEED, start_angle - cube_last * (AVOIDANCE_ANGLE + angle_addition));
-  if (cube_last == 1) // due to a slight asymmetry in the steering, when avoiding red cubes we need to steer less
-    angle_addition = -5;
-  move_cm_gyro(30, MOTOR_SPEED, current_angle_gyro + cube_last * (CORRECTION_ANGLE + angle_addition)); // go a bit in the other direction so that we can see the next cube
   CASE = AFTER_CUBE;
 }
 
@@ -270,7 +266,7 @@ void loop_function() {
         CASE = STOP_BEFORE_FIND_PARKING;
       }
       else {
-        int angle_addition = 0;
+        double angle_addition = 0;
         if (cube_last == 1) // due to a slight asymmetry in the steering, when avoiding red cubes we need to steer less
           angle_addition = -9;
         double err = current_angle_gyro - gx + cube_last * (CORRECTION_ANGLE + angle_addition);
