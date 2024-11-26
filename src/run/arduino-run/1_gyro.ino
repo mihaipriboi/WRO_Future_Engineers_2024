@@ -12,7 +12,7 @@ double gyro_last_read_time = 0;
 double drifts_x, drifts_y, drifts_z;
 
 // -----Gyro-----
-double current_angle_gyro = 0;
+double current_angle_gyro = 1.25; // due to an asymmetry in the steering
 double kp_gyro = 0.025;
 double ki_gyro = 0;
 double kd_gyro = 0.042;

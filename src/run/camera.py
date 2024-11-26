@@ -33,18 +33,18 @@ blue_led = LED(3)
 
 if FINAL:
     green_led.on()
-    blue_led.on()
+    blue_led.on() # blink led with a cyan color so that we know the camera is ready
     time.sleep(0.5)
-    green_led.off()
-    blue_led.off()
-    time.sleep(0.5) # blink led with a cyan color so that we know the camera is ready and running the final code
 else:
     green_led.on()
-    red_led.on()
+    red_led.on() # blink led with a yellow color so that we know the camera is ready
     time.sleep(0.5)
-    green_led.off()
-    red_led.off()
-    time.sleep(0.5) # blink led with a yellow color so that we know the camera is ready and running the quali code
+
+# turn led off
+red_led.off()
+green_led.off()
+blue_led.off()
+time.sleep(0.5)
 
 # threshold values
 
@@ -68,6 +68,10 @@ parking_threshold = [(30, 70, 10, 60, -15, 15)]
 
 black_threshold = [(0, 45, -10, 15, -25, 10)]
 
+# define threshold for "darkness"
+dark_threshold = 50
+darkness_limit = 85  # 85% threshold for too dark
+
 # ROI values
 img = sensor.snapshot()
 cubes_roi = (0, int(img.height() / 2 + 8), img.width(), int(img.height() / 2 - 8))
@@ -77,12 +81,18 @@ parking_roi = (0, int(img.height() / 2 + 8), img.width(), int(img.height() / 2 -
 wall_roi = (0, int(img.height() / 3 + 10), img.width(), int(img.height() * 2 / 3 - 10))
 wall_roi_area = wall_roi[2] * wall_roi[3]
 
+wall_left_roi = (0, 50, 60, 30)
+wall_right_roi = (100, 50, 60, 30)
+
+wall_dark_roi = (40, 50, 80, 40)
+
 # restrains values
-min_cube_height = 5
-min_cube_size = 50
-max_cube_size_red = 330 # 400
-max_cube_size_green = 290 # 300
-wall_blob_size = 4600
+min_cube_height = 3
+min_cube_size = 45
+#max_cube_size_red = 390 # 400
+#max_cube_size_green = 250 # 300
+max_cube_height = 13
+wall_blob_size = 4500
 
 line_blob_size = 350
 parking_blob_height_trigger = 10
@@ -91,8 +101,8 @@ parking_blob_size_min = 35
 density_thr = 0.7 # 0.6
 
 # PID values
-kp = 0.0033  # 0.0033
-kd = 0.033   # 0.033
+kp = 0.0028  # 0.0033
+kd = 0.020   # 0.033
 err_old = 0
 
 # force the val into the [min_intv, max_intv] interval
@@ -179,6 +189,52 @@ clock = time.clock()
 while (True):
     clock.tick()
     img = sensor.snapshot()
+    gray_img = img.copy()  # Make a copy of the image
+    gray_img.to_grayscale()  # Convert to grayscale
+
+    left_dark_pixels = 0
+    right_dark_pixels = 0
+    middle_dark_pixels = 0
+
+    # process pixels in the left ROI
+    for y in range(wall_dark_roi[1], wall_dark_roi[1] + wall_dark_roi[3]):
+        for x in range(wall_dark_roi[0], wall_dark_roi[0] + wall_dark_roi[2]):
+            if gray_img.get_pixel(x, y) < dark_threshold:
+                middle_dark_pixels += 1
+
+    # process pixels in the left ROI
+    for y in range(wall_left_roi[1], wall_left_roi[1] + wall_left_roi[3]):
+        for x in range(wall_left_roi[0], wall_left_roi[0] + wall_left_roi[2]):
+            if gray_img.get_pixel(x, y) < dark_threshold:
+                left_dark_pixels += 1
+
+    # process right ROI
+    for y in range(wall_right_roi[1], wall_right_roi[1] + wall_right_roi[3]):
+        for x in range(wall_right_roi[0], wall_right_roi[0] + wall_right_roi[2]):
+            if gray_img.get_pixel(x, y) < dark_threshold:
+                right_dark_pixels += 1
+
+
+    # calculate darkness percentages
+    left_total_pixels = wall_left_roi[2] * wall_left_roi[3]
+    right_total_pixels = wall_right_roi[2] * wall_right_roi[3]
+    middle_total_pixels = wall_dark_roi[2] * wall_dark_roi[3]
+
+    left_dark_percentage = (left_dark_pixels / left_total_pixels) * 100
+    right_dark_percentage = (right_dark_pixels / right_total_pixels) * 100
+    middle_dark_percentage = (middle_dark_pixels / middle_total_pixels) * 100
+
+#    img.draw_rectangle(wall_dark_roi, color=(0, 0, 255))  # Left ROI in blue
+#    img.draw_string(wall_dark_roi[0], wall_dark_roi[1] - 10, str(middle_dark_percentage), color=(255, 0, 0))
+
+
+#    # draw ROIs with blue outlines
+#    img.draw_rectangle(wall_left_roi, color=(0, 0, 255))  # Left ROI in blue
+#    img.draw_rectangle(wall_right_roi, color=(0, 0, 255))  # Right ROI in blue
+
+#    # overlay the darkness percentages
+#    img.draw_string(wall_left_roi[0], wall_left_roi[1] - 10, str(left_dark_percentage), color=(255, 0, 0))
+#    img.draw_string(wall_right_roi[0], wall_right_roi[1] - 10, str(right_dark_percentage), color=(255, 0, 0))
 
     # find the coloured blobs corresponding to the turn lines
     orange_blobs = img.find_blobs(orange_threshold, roi=lines_roi, pixels_threshold=line_blob_size, area_threshold=line_blob_size, merge=True)
@@ -244,11 +300,26 @@ while (True):
     if FINAL: # if we're running the code for the final challenge
         # find the coloured blobs corresponding to the cubes
         red_blobs = img.find_blobs(red_threshold, roi=cubes_roi, pixels_threshold=min_cube_size, area_threshold=min_cube_size, merge=True)
-        green_blobs = img.find_blobs(green_threshold, roi=cubes_roi, pixels_threshold=min_cube_size - 15, area_threshold=min_cube_size - 15, merge=True)
+        green_blobs = img.find_blobs(green_threshold, roi=cubes_roi, pixels_threshold=min_cube_size, area_threshold=min_cube_size, merge=True)
 
         # find the coloured blobs corresponding to the parking walls
         parking_blobs = img.find_blobs(parking_threshold, roi=parking_roi, pixels_threshold=parking_blob_size_min, area_threshold=parking_blob_size_min, merge=True)
         parking_wall_blob = get_biggest_blob(parking_blobs)
+
+#        if parking_wall_blob:
+#            img.draw_rectangle(parking_wall_blob.rect(), color=(0, 0, 255))  # RGB: Blue
+#            # draw a cross at the center of the detected object
+#            img.draw_cross(parking_wall_blob.cx(), parking_wall_blob.cy(), color=(0, 0, 255))  # RGB: Blue
+#            # add text annotation with information about the object
+#            img.draw_string(parking_wall_blob.cx() - 47, parking_wall_blob.cy() - 48,
+#                            "Object: Parking",
+#                            color=(0, 255, 0), scale=1)  # Adjust scale as needed
+#            img.draw_string(parking_wall_blob.cx() - 42, parking_wall_blob.cy() - 38,
+#                            "Area: {}".format(parking_wall_blob.pixels()),
+#                            color=(0, 255, 0), scale=1)  # Adjust scale as needed
+#            img.draw_string(parking_wall_blob.cx() - 47, parking_wall_blob.cy() - 28,
+#                            "X: {}, Y: {}".format(parking_wall_blob.cx(), parking_wall_blob.cy()),
+#                            color=(0, 255, 0), scale=1)
 #        if parking_wall_blob:
 #            img.draw_rectangle(parking_wall_blob.rect(), color=(0, 255, 0))
 
@@ -279,14 +350,33 @@ while (True):
                 color = 'green'
 
         if saved_cube != None: # if we saw a cube
+
+            # draw a blue rectangle around the detected object
+#            img.draw_rectangle(saved_cube.rect(), color=(0, 0, 255))  # RGB: Blue
+#            # draw a cross at the center of the detected object
+#            img.draw_cross(saved_cube.cx(), saved_cube.cy(), color=(0, 0, 255))  # RGB: Blue
+#            # add text annotation with information about the object
+#            img.draw_string(saved_cube.cx() - 47, saved_cube.cy() - 45,
+#                            "Color: {}".format(color),
+#                            color=(255, 0, 0), scale=1)  # Adjust scale as needed
+#            img.draw_string(saved_cube.cx() - 42, saved_cube.cy() - 35,
+#                            "Area: {}".format(saved_cube.pixels()),
+#                            color=(255, 0, 0), scale=1)  # Adjust scale as needed
+#            img.draw_string(saved_cube.cx() - 42, saved_cube.cy() - 55,
+#                            "height: {}".format(saved_cube.h()),
+#                            color=(255, 0, 0), scale=1)  # Adjust scale as needed
+#            img.draw_string(saved_cube.cx() - 47, saved_cube.cy() - 25,
+#                            "X: {}, Y: {}".format(saved_cube.cx(), saved_cube.cy()),
+#                            color=(255, 0, 0), scale=1)  # Adjust scale as needed
 #            img.draw_rectangle(saved_cube.rect())
 #            img.draw_cross(saved_cube.cx(), saved_cube.cy())
 
             # if the cube area is over a certain threshold
             # it means we must avoid the cube as we are too close to it
-            if (color == 'red' and saved_cube.pixels() >= max_cube_size_red) or (color == 'green' and saved_cube.pixels() >= max_cube_size_green):
+            if saved_cube.h() >= max_cube_height:
 #                img.draw_cross(saved_cube.cx(), saved_cube.cy(), color=(0, 255, 0))
                 # send the right trigger
+                err_old = 0
                 if color == 'red':
                     uart.write('R\n')
 #                    print('R\n')
@@ -299,11 +389,21 @@ while (True):
 #                    print(str(direction))
             else: # if the cube isn't too big we must follow it
                 # calculate the angle using PID
+
                 err = saved_cube.cx() - img.width() / 2
-                steering = err * kp + (err - err_old) * kd
-                steering = -clamp(steering, -1, 1)
-                err_old = err
+
+                if left_dark_percentage > darkness_limit and saved_cube.pixels() <= 250:
+                    steering = -0.6 # Too dark on the left, steer right
+#                    print("penis")
+                elif right_dark_percentage > darkness_limit and saved_cube.pixels() <= 250:
+                    steering = 0.6
+#                    print("penis")
+                else:
+                    steering = err * kp + (err - err_old) * kd
+                    steering = -clamp(steering, -1, 1)
+                    err_old = err
                 # craft the command
+                # adjust error based on darkness levels
                 if color == 'red':
                     msg = 'r' + str(steering) + '\n'
                 else:
@@ -326,7 +426,7 @@ while (True):
         if wall_blobs:
             # if the wall is big enough, send a slightly different message that helps us when parking
             # if not, send the classic one
-            if outer_wall.pixels() >= wall_roi_area and outer_wall.area() >= wall_roi_area:
+            if middle_dark_percentage > 75:
                 uart.write('WP\n')
 #                print('WP\n')
             else:
