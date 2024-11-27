@@ -878,7 +878,6 @@ In the ```PID``` case, the robot moves straight and turns. It uses a special too
 
 ```ino
 case PID: {
-  check_for_turnaround();
   double err = current_angle_gyro - gx;
   if (millis() - last_rotate > FIRST_STOP_DELAY && turns >= 12) { // if we did 3 runs of the round
     if (FINAL) {
@@ -921,7 +920,7 @@ img = sensor.snapshot()
 
 # find the coloured blobs corresponding to the cubes
 red_blobs = img.find_blobs(red_threshold, roi=cubes_roi, pixels_threshold=min_cube_size, area_threshold=min_cube_size, merge=True)
-green_blobs = img.find_blobs(green_threshold, roi=cubes_roi, pixels_threshold=min_cube_size - 15, area_threshold=min_cube_size - 15, merge=True)
+green_blobs = img.find_blobs(green_threshold, roi=cubes_roi, pixels_threshold=min_cube_size, area_threshold=min_cube_size, merge=True)
 
 msg = "0\n"
 max_area = 0
@@ -945,8 +944,9 @@ for blob in green_blobs: # for every green blob
 if saved_cube != None: # if we saw a cube
     # if the cube area is over a certain threshold
     # it means we must avoid the cube as we are too close to it
-    if (color == 'red' and saved_cube.pixels() >= max_cube_size_red) or (color == 'green' and saved_cube.pixels() >= max_cube_size_green):
+    if saved_cube.h() >= max_cube_height:
         # send the right trigger
+        err_old = 0
         if color == 'red':
             uart.write('R\n')
         else:
@@ -970,7 +970,6 @@ if saved_cube != None: # if we saw a cube
             # if we must also turn, send the turn trigger
             uart.write(str(direction) + '\n')
 elif has_line: # if we don't see any cubes
-    # if we must turn, send the turn trigger
     uart.write(str(direction) + '\n')
 ```
 
@@ -985,32 +984,27 @@ The arduino part is quite simple, consisting of the quali switch but with two ex
 ```ino
 // hardcoded sequence that avoids a cube
 void pass_cube(int cube_last) {
-  int angle_addition = 0;
   read_gyro(false);
+  double angle_addition = 0;
   double start_angle = gx;
-  if (cube_last == 1) { // due to a slight asymmetry in the steering, when avoiding red cubes we need to steer less
-    angle_addition = -2;
-    if(abs(current_angle_gyro - start_angle) >= 12) // if we're crooked, dinamically adjust the avoidance angle so that we don't overshoot
-      angle_addition += -1 * abs(current_angle_gyro - start_angle) / 2.5;
+  double err = abs(current_angle_gyro - start_angle);
+
+  if (err >= 50) { // if we're really crooked, substract a given value so that we don't overcompensate
+    angle_addition -= 10;
   }
-  else if(abs(current_angle_gyro - start_angle) >= 12) // if we're crooked, dinamically adjust the avoidance angle so that we don't overshoot
-    angle_addition = -1 * abs(current_angle_gyro - start_angle) / 3;
+  else {
+    angle_addition -= max(err / 2.75, 0.0); // if we're crooked, dinamically adjust the avoidance angle so that we don't overshoot
+  }
   move_until_angle(MOTOR_SPEED, start_angle - cube_last * (AVOIDANCE_ANGLE + angle_addition)); // steer away from the cube
-  // gain some distance
-  if (abs(current_angle_gyro - start_angle) >= 10) // if we passed by it while crooked in regards to the goal line we need to overcompensate in order to see the next cube
-    move_cm_gyro(14, MOTOR_SPEED, start_angle - cube_last * (AVOIDANCE_ANGLE + angle_addition));
-  else
-    move_cm_gyro(7, MOTOR_SPEED, start_angle - cube_last * (AVOIDANCE_ANGLE + angle_addition));
-  if (cube_last == 1) // due to a slight asymmetry in the steering, when avoiding red cubes we need to steer less
-    angle_addition = -5;
-  move_cm_gyro(30, MOTOR_SPEED, current_angle_gyro + cube_last * (CORRECTION_ANGLE + angle_addition)); // go a bit in the other direction so that we can see the next cube
+  start_angle = gx;
+
+  last_cube_time = millis();
   CASE = AFTER_CUBE;
 }
 ```
 
 ```ino
 case FOLLOW_CUBE: {
-  check_for_turnaround();
   if (millis() - last_rotate > FIRST_STOP_DELAY && turns >= 12) { // if we did 3 runs of the obstacle round, we need to stop and search for the parking
     CASE = STOP_BEFORE_FIND_PARKING;
   }
@@ -1025,7 +1019,6 @@ case FOLLOW_CUBE: {
 }
 
 case AFTER_CUBE: {
-  check_for_turnaround();
   if (millis() - last_rotate > FIRST_STOP_DELAY && turns >= 12) { // if we did 3 runs of the obstacle round, we need to stop and search for the parking
     CASE = STOP_BEFORE_FIND_PARKING;
   }
@@ -1056,38 +1049,44 @@ case AFTER_CUBE: {
 }
 ```
 
-The next challenge in this round consists in the final turnaround. If the last seen cube is red, we need to do a roundabout and complete the last lap in the opposite direction. The way we deal with this is a function that checks if we should turn around and executes it if necessary. This function is called in the ```PID```, ```FOLLOW_CUBE``` and ```AFTER_CUBE``` cases. In order to make sure that at the turnaround we don't hit any obstacles, we wait until the next corner in order to have room for the manuver. To do this, when we want to do the turnaround, we set a global flag to ```true```, and when we want to execute a turn, we turnaround and set the flag to its initial value, ```false```, so that we won't repeat the manuver.
+The next challenge in this round consists in the final turnaround. If the last seen cube is red, we need to do a roundabout and complete the last lap in the opposite direction. The way we deal with this is an ```if``` condition that gets executed before we pass a cube. The turn condition is simple: if we did the required number of turns and if we're either right after a turn and the last avoided cube is red or if we're further away from the turn and the cube we want to avoid now is red then we turn around.
 
 ```ino
-void check_for_turnaround() {
-  // if we didn't do the turnaround yet
-  // and we did 2 runs of the map
-  // and the last seen cube is red
-  // and some time passed since the 8th turn
-  // (so that we can see the first cube in the starting sequence in case this sequence had 2 cubes and we spawned between them)
-  if (!FINAL)
+void execute() {
+  if ((cmd[0] == 'R' || cmd[0] == 'G') && millis() - last_cube_time >= PASS_CUBE_DELAY) { // if we're in the proximity of a cube
+    before_side_last_cube = cube_last; // remember the last passed cube (excluding this one)
+    if (cmd[0] == 'R') { // we determine the direction in which we avoid the cube and remember its color
+      cube_last = 1;
+    }
+    else {
+      cube_last = -1;
+    }
+
+    if (turns == 8 && ((cube_last == 1 && millis() - last_rotate < TURNAROUND_DELAY) || millis() - last_rotate > TURNAROUND_DELAY && before_side_last_cube == 1) && !turned) // if we have are in the position to turn around, the cube is red and we haven't turned around already
+      turn_around(cube_last);
+    else 
+      pass_cube(cube_last);
     return;
-  if (!TURNED && turns == 8 && cube_last == 1 && millis() - last_rotate > TURNAROUND_DELAY) {
-    turn_around = true;
   }
 }
 
-void execute_turnaround() {
+// hardcoded sequence that turns around
+// we need the last passed cube so that we know which way we take the turn so that we don't hit anything
+void turn_around(int cube_last) {
   read_gyro(false);
-  double starting_angle = gx;
-  drift(MOTOR_SPEED, -1, current_angle_gyro - 80);
+  double start_angle = gx;
+  move_until_angle(MOTOR_SPEED, start_angle - cube_last * 57);
+  move_until_angle(MOTOR_SPEED, current_angle_gyro + cube_last * 200);
+  current_angle_gyro += cube_last * 180;
   turn_direction *= -1;
-  current_angle_gyro += 180;
-  drift(MOTOR_SPEED, 1, current_angle_gyro + turn_direction * TURNAROUND_ANGLE);
-  TURNED = true;
-  turn_around = false;
+  turned = true;
   CASE = PID;
 }
 ```
 
 The final challenge in this round consists in parking the robot. The way we implement this is based on the quali. Basically we want to move as close to the outer walls as possible so that we're perfectly positioned for the parking and avoid all of the cubes. How we achieve this is by going perpendicular to the outside walls after we finish the obstacle round (see the ```POSITION_BEFORE_FIND_PARKING``` case). The goal is to position ourselves as close as possible to them. After we receive a trigger from the camera saying that we're in its proximity, we straighten ourselves out and start the basic quali code.
 
-While moving around the map like this (in the ```FIND_PARKING``` case), we are constantly scanning for magenta blobs that represent the parking walls. When we detect them, we send a trigger from the camera to the arduino and then we have a hardcoded sequence that puts us between the walls, perfectly parallel to them, implemented in the ```POSITION_FOR_PARK``` case. After that, we move straight in order to get closer to the outer wall (see the ```PARK``` case). When we receive the trigger from the camera, move a couple of cm straight and stop the robot.
+While moving around the map like this (in the ```FIND_PARKING``` case), we are constantly scanning for magenta blobs that represent the parking walls. When we detect them, we send a trigger from the camera to the arduino and then we have a hardcoded sequence that puts us between the walls, perfectly parallel to them, implemented in the ```POSITION_FOR_PARK``` case. After that, we move straight in order to get closer to the outer wall (see the ```PARK``` case). When we receive the trigger from the camera, position ourselves and stop the robot.
 
 Camera code:
 
@@ -1100,6 +1099,8 @@ def is_parking_wall(blob):
         return True
     return False
 
+img = sensor.snapshot()
+
 # find the coloured blobs corresponding to the parking walls
 parking_blobs = img.find_blobs(parking_threshold, roi=parking_roi, pixels_threshold=parking_blob_size_min, area_threshold=parking_blob_size_min, merge=True)
 parking_wall_blob = get_biggest_blob(parking_blobs)
@@ -1108,13 +1109,49 @@ parking_wall_blob = get_biggest_blob(parking_blobs)
 wall_blobs = img.find_blobs(black_threshold, roi=wall_roi, pixels_threshold=wall_blob_size, area_threshold=wall_blob_size, merge=True)
 outer_wall = get_biggest_blob(wall_blobs)
 
+gray_img = img.copy()  # make a copy of the image
+gray_img.to_grayscale()  # convert to grayscale
+
+# determine the brightness of the ROIs to know if we're close to an outside wall or not
+left_dark_pixels = 0
+right_dark_pixels = 0
+middle_dark_pixels = 0
+
+# process pixels in the left ROI
+for y in range(wall_dark_roi[1], wall_dark_roi[1] + wall_dark_roi[3]):
+    for x in range(wall_dark_roi[0], wall_dark_roi[0] + wall_dark_roi[2]):
+        if gray_img.get_pixel(x, y) < dark_threshold:
+            middle_dark_pixels += 1
+
+# process pixels in the left ROI
+for y in range(wall_left_roi[1], wall_left_roi[1] + wall_left_roi[3]):
+    for x in range(wall_left_roi[0], wall_left_roi[0] + wall_left_roi[2]):
+        if gray_img.get_pixel(x, y) < dark_threshold:
+            left_dark_pixels += 1
+
+# process right ROI
+for y in range(wall_right_roi[1], wall_right_roi[1] + wall_right_roi[3]):
+    for x in range(wall_right_roi[0], wall_right_roi[0] + wall_right_roi[2]):
+        if gray_img.get_pixel(x, y) < dark_threshold:
+            right_dark_pixels += 1
+
+
+# calculate darkness percentages
+left_total_pixels = wall_left_roi[2] * wall_left_roi[3]
+right_total_pixels = wall_right_roi[2] * wall_right_roi[3]
+middle_total_pixels = wall_dark_roi[2] * wall_dark_roi[3]
+
+left_dark_percentage = (left_dark_pixels / left_total_pixels) * 100
+right_dark_percentage = (right_dark_pixels / right_total_pixels) * 100
+middle_dark_percentage = (middle_dark_pixels / middle_total_pixels) * 100
+
 if is_parking_wall(parking_wall_blob):
     # if we saw the parking walls, send the parking trigger
     uart.write('P\n')
 if wall_blobs:
     # if the wall is big enough, send a slightly different message that helps us when parking
     # if not, send the classic one
-    if outer_wall.pixels() >= wall_roi_area and outer_wall.area() >= wall_roi_area:
+    if middle_dark_percentage > 75:
         uart.write('WP\n')
     else:
         uart.write('W\n')
@@ -1129,8 +1166,8 @@ if wall_blobs:
 
 ```ino
 case STOP_BEFORE_FIND_PARKING: {
-  // straighten ourselves, start searching for the parking
-  move_cm_gyro(20, MOTOR_SPEED, current_angle_gyro);
+  // straighten ourselves, start positioning for the parking
+  move_cm_gyro(22, MOTOR_SPEED, current_angle_gyro);
   motor_break(1000);
   CASE = POSITION_BEFORE_FIND_PARKING;
   break;
@@ -1161,10 +1198,10 @@ case FIND_PARKING: {
 case POSITION_FOR_PARK: {
   // hardcoded sequence of moves that positions us in the parking spot
   // after that, we just get closer to the outside wall so that we're fully in
-  move_cm_gyro(14, PARKING_SPEED, current_angle_gyro);
-  move_until_angle(PARKING_SPEED, current_angle_gyro + turn_direction * 90);
-  move_cm_gyro(3, -PARKING_SPEED, current_angle_gyro + turn_direction * 90);
-  move_until_angle(PARKING_SPEED, current_angle_gyro - turn_direction * 90);
+  move_cm_gyro(16, PARKING_SPEED, current_angle_gyro);
+  drift(PARKING_SPEED, turn_direction, current_angle_gyro + turn_direction * 90);
+  move_cm_gyro(10, -PARKING_SPEED, current_angle_gyro + turn_direction * 90);
+  drift(PARKING_SPEED, -turn_direction, current_angle_gyro - turn_direction * 90);
   CASE = PARK;
   break;
 }
@@ -1322,7 +1359,7 @@ void execute(String cmd) {
     }
 
     if (CASE == PARK && (cmd[0] == 'W' && cmd[1] == 'P')) { // if we're positioning ourselves close to the wall and we're in its proximity
-      move_cm_gyro(2.75, PARKING_SPEED, current_angle_gyro - turn_direction * 90); // position ourselves closer
+      // move_cm_gyro(2.75, PARKING_SPEED, current_angle_gyro - turn_direction * 90); // position ourselves closer
       CASE = STOP_FINAL; // we finished the parking, stop
       return;
     }
@@ -1331,14 +1368,19 @@ void execute(String cmd) {
       return;
 
     if (CASE != FIND_PARKING && CASE != POSITION_BEFORE_FIND_PARKING) {
-      if (cmd[0] == 'R' || cmd[0] == 'G') { // if we're in the proximity of a cube
-        if (cmd[0] == 'R') { // we determine the direction in which we avoid the cube
+      if ((cmd[0] == 'R' || cmd[0] == 'G') && millis() - last_cube_time >= PASS_CUBE_DELAY) { // if we're in the proximity of a cube
+        before_side_last_cube = cube_last; // remember the last passed cube (excluding this one)
+        if (cmd[0] == 'R') { // we determine the direction in which we avoid the cube and remember its color
           cube_last = 1;
         }
         else {
           cube_last = -1;
         }
-        pass_cube(cube_last);
+
+        if (turns == 8 && ((cube_last == 1 && millis() - last_rotate < TURNAROUND_DELAY) || millis() - last_rotate > TURNAROUND_DELAY && before_side_last_cube == 1) && !turned) // if we have are in the position to turn around, the cube is red and we haven't turned around already
+          turn_around(cube_last);
+        else 
+          pass_cube(cube_last);
         return;
       }
       if (cmd[0] == 'r' || cmd[0] == 'g') { // if we see a cube but we're not close enough to avoid it
@@ -1361,11 +1403,6 @@ void execute(String cmd) {
       }
     }
     if (millis() - last_rotate > delay_walls) { // if we can make a turn
-      if (turn_around) {
-        execute_turnaround();
-        last_rotate = millis(); // update the last time we turned
-        return;
-      }
       if (CASE == FIND_PARKING) { // if we're searching for the parking spot
         // if we're at the first turn, we have to move more in order to position ourselves close to the outer walls
         move_cm_gyro(CORNER_DISTANCE_PARKING, MOTOR_SPEED, current_angle_gyro);

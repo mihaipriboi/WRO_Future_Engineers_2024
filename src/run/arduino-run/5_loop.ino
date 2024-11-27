@@ -37,6 +37,7 @@ double follow_cube_angle = 0;
 #define TURNAROUND_DELAY 1000
 #define FIRST_STOP_DELAY 1500
 #define FOLLOW_CUBE_DEAD_TIME 250
+#define PASS_CUBE_DELAY 200
 
 // -----Logic-----
 int turn_direction = 0;
@@ -55,17 +56,16 @@ int freq = 0;
 
 // hardcoded sequence that avoids a cube
 void pass_cube(int cube_last) {
-
   read_gyro(false);
   double angle_addition = 0;
   double start_angle = gx;
   double err = abs(current_angle_gyro - start_angle);
 
-  if (err >= 50) {
+  if (err >= 50) { // if we're really crooked, substract a given value so that we don't overcompensate
     angle_addition -= 10;
   }
   else {
-    angle_addition -= max(err / 2.75, 0.0);
+    angle_addition -= max(err / 2.75, 0.0); // if we're crooked, dinamically adjust the avoidance angle so that we don't overshoot
   }
   move_until_angle(MOTOR_SPEED, start_angle - cube_last * (AVOIDANCE_ANGLE + angle_addition)); // steer away from the cube
   start_angle = gx;
@@ -137,9 +137,9 @@ void execute(String cmd) {
       return;
 
     if (CASE != FIND_PARKING && CASE != POSITION_BEFORE_FIND_PARKING) {
-      if ((cmd[0] == 'R' || cmd[0] == 'G') && millis() - last_cube_time >= 200) { // if we're in the proximity of a cube
-        before_side_last_cube = cube_last;
-        if (cmd[0] == 'R') { // we determine the direction in which we avoid the cube
+      if ((cmd[0] == 'R' || cmd[0] == 'G') && millis() - last_cube_time >= PASS_CUBE_DELAY) { // if we're in the proximity of a cube
+        before_side_last_cube = cube_last; // remember the last passed cube (excluding this one)
+        if (cmd[0] == 'R') { // we determine the direction in which we avoid the cube and remember its color
           cube_last = 1;
         }
         else {

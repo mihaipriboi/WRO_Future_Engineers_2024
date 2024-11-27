@@ -189,9 +189,10 @@ clock = time.clock()
 while (True):
     clock.tick()
     img = sensor.snapshot()
-    gray_img = img.copy()  # Make a copy of the image
-    gray_img.to_grayscale()  # Convert to grayscale
+    gray_img = img.copy()  # make a copy of the image
+    gray_img.to_grayscale()  # convert to grayscale
 
+    # determine the brightness of the ROIs to know if we're close to an outside wall or not
     left_dark_pixels = 0
     right_dark_pixels = 0
     middle_dark_pixels = 0
@@ -392,16 +393,16 @@ while (True):
 
                 err = saved_cube.cx() - img.width() / 2
 
-                if left_dark_percentage > darkness_limit and saved_cube.pixels() <= 250:
-                    steering = -0.6 # Too dark on the left, steer right
-#                    print("penis")
-                elif right_dark_percentage > darkness_limit and saved_cube.pixels() <= 250:
-                    steering = 0.6
-#                    print("penis")
-                else:
-                    steering = err * kp + (err - err_old) * kd
-                    steering = -clamp(steering, -1, 1)
-                    err_old = err
+#                if left_dark_percentage > darkness_limit and saved_cube.pixels() <= 250:
+#                    steering = -0.6 # Too dark on the left, steer right
+##                    print("debug")
+#                elif right_dark_percentage > darkness_limit and saved_cube.pixels() <= 250:
+#                    steering = 0.6
+##                    print("debug")
+#                else:
+                steering = err * kp + (err - err_old) * kd
+                steering = -clamp(steering, -1, 1)
+                err_old = err
                 # craft the command
                 # adjust error based on darkness levels
                 if color == 'red':
