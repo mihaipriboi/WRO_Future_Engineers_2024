@@ -51,9 +51,11 @@ time.sleep(0.5)
 #red_threshold = [(35, 62, 40, 70, 5, 60)]
 #red_threshold = [(40, 65, 30, 70, 20, 65)]
 #red_threshold = [(40, 55, 30, 60, 25, 60), (40, 55, 45, 70, 20, 65), (30, 55, 20, 65, -15, 50)]
-red_threshold = [(30, 55, 20, 70, -15, 60)]
+#red_threshold = [(30, 55, 20, 70, -15, 60)]
+red_threshold = [(18, 80, 5, 60, -10, 65)]
 
-green_threshold = [(45, 90, -50, -10, -25, 20), (15, 60, -45, -15, -5, 20), (21, 50, -30, -12, -32, 12)]
+#green_threshold = [(45, 90, -50, -10, -25, 20), (15, 60, -45, -15, -5, 20), (21, 50, -30, -12, -32, 12)]
+green_threshold = [(20, 85, -60, -5, -5, 55)]
 
 #blue_threshold = [(10, 55, -15, 45, -45, -5)]
 blue_threshold = [(10, 80, -5, 25, -50, -5)]
@@ -64,13 +66,13 @@ orange_threshold = [(50, 80, 5, 45, 15, 75)]
 #orange_threshold = [(40, 85, -10, 40, 20, 80)]
 
 #parking_threshold = [(25, 63, 45, 65, -10, 10)]
-parking_threshold = [(30, 70, 10, 60, -15, 15)]
+parking_threshold = [(25, 70, 14, 45, -15, 10)]
 
 black_threshold = [(0, 45, -10, 15, -25, 10)]
 
 # define threshold for "darkness"
 dark_threshold = 50
-darkness_limit = 85  # 85% threshold for too dark
+darkness_limit = 90  # 90% threshold for too dark
 
 # ROI values
 img = sensor.snapshot()
@@ -87,12 +89,13 @@ wall_right_roi = (100, 50, 60, 30)
 wall_dark_roi = (40, 50, 80, 40)
 
 # restrains values
-min_cube_height = 3
+min_cube_height = 4
 min_cube_size = 45
 #max_cube_size_red = 390 # 400
 #max_cube_size_green = 250 # 300
-max_cube_height = 13
-wall_blob_size = 4500
+max_cube_height_red = 14
+max_cube_height_green = 12
+wall_blob_size = 4600
 
 line_blob_size = 350
 parking_blob_height_trigger = 10
@@ -101,8 +104,8 @@ parking_blob_size_min = 35
 density_thr = 0.7 # 0.6
 
 # PID values
-kp = 0.0028  # 0.0033
-kd = 0.020   # 0.033
+kp = 0.0019  # 0.0033
+kd = 0.009   # 0.033
 err_old = 0
 
 # force the val into the [min_intv, max_intv] interval
@@ -304,7 +307,7 @@ while (True):
         green_blobs = img.find_blobs(green_threshold, roi=cubes_roi, pixels_threshold=min_cube_size, area_threshold=min_cube_size, merge=True)
 
         # find the coloured blobs corresponding to the parking walls
-        parking_blobs = img.find_blobs(parking_threshold, roi=parking_roi, pixels_threshold=parking_blob_size_min, area_threshold=parking_blob_size_min, merge=True)
+        parking_blobs = img.find_blobs(parking_threshold, roi=parking_roi, pixels_threshold=parking_blob_size_min, area_threshold=parking_blob_size_min, merge=False)
         parking_wall_blob = get_biggest_blob(parking_blobs)
 
 #        if parking_wall_blob:
@@ -338,6 +341,7 @@ while (True):
         for blob in red_blobs: # for every red blob
             # if they're passing the height and density filters
             # we're keeping the biggest one and its color
+
             if is_cube(blob, orange_blob, parking_blobs) and blob.area() > max_area:
                 max_area = blob.area()
                 saved_cube = blob
@@ -351,7 +355,6 @@ while (True):
                 color = 'green'
 
         if saved_cube != None: # if we saw a cube
-
             # draw a blue rectangle around the detected object
 #            img.draw_rectangle(saved_cube.rect(), color=(0, 0, 255))  # RGB: Blue
 #            # draw a cross at the center of the detected object
@@ -374,7 +377,7 @@ while (True):
 
             # if the cube area is over a certain threshold
             # it means we must avoid the cube as we are too close to it
-            if saved_cube.h() >= max_cube_height:
+            if (color == 'red' and saved_cube.h() >= max_cube_height_red) or (color == 'green' and saved_cube.h() >= max_cube_height_green):
 #                img.draw_cross(saved_cube.cx(), saved_cube.cy(), color=(0, 255, 0))
                 # send the right trigger
                 err_old = 0
@@ -391,13 +394,17 @@ while (True):
             else: # if the cube isn't too big we must follow it
                 # calculate the angle using PID
 
-                err = saved_cube.cx() - img.width() / 2
+                if color == 'red':
+                    err = saved_cube.cx() - (img.width() / 2)
+                else:
+                    err = saved_cube.cx() - (img.width() / 2 - 5)
+
 
 #                if left_dark_percentage > darkness_limit and saved_cube.pixels() <= 250:
-#                    steering = -0.6 # Too dark on the left, steer right
+#                    steering = -0.35 # too dark on the left, steer right
 ##                    print("debug")
 #                elif right_dark_percentage > darkness_limit and saved_cube.pixels() <= 250:
-#                    steering = 0.6
+#                    steering = 0.35
 ##                    print("debug")
 #                else:
                 steering = err * kp + (err - err_old) * kd
@@ -421,7 +428,7 @@ while (True):
 #            print(str(direction))
         if is_parking_wall(parking_wall_blob):
             # if we saw the parking walls, send the parking trigger
-#            img.draw_rectangle(parking_wall_blob.rect(), color=(0, 255, 0))
+            img.draw_rectangle(parking_wall_blob.rect(), color=(0, 255, 0))
             uart.write('P\n')
 #            print('P\n')
         if wall_blobs:
